@@ -24,6 +24,7 @@ const SearchBar = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [passengers, setPassengers] = useState<number>(0);
+  const [location, setLocation] = useState("rhumuda");
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   // Calculate min and max dates
@@ -60,10 +61,15 @@ const SearchBar = () => {
   const open = Boolean(anchorEl);
 
   const handleSearch = () => {
+    if (!selectedDate) {
+      // Optional: Add error handling for missing date
+      return;
+    }
+
     navigate("/inquiry", {
       state: {
         jettyPoint: location,
-        bookingDate: dates,
+        bookingDate: selectedDate.format("DD/MM/YYYY"),
         passengers: passengers,
       },
     });
@@ -109,7 +115,8 @@ const SearchBar = () => {
           </Typography>
         </Box>
         <Select
-          defaultValue="rhumuda"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
           variant="standard"
           sx={{
             "&:before": { display: "none" },
