@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -23,6 +23,7 @@ import {
   Button,
 } from "@mui/material";
 import CircleIcon from "@mui/icons-material/Circle";
+import axiosInstance from "../config/axios";
 
 interface SearchParams {
   jettyPoint: string;
@@ -62,7 +63,35 @@ interface OtherOptions {
   remarks: string;
 }
 
-const steps = ["Customer Info", "Reservation Details", "Other Option"];
+interface BookingConfirmation {
+  bookingId: string;
+  customerName: string;
+  packageType: string;
+  bookingDate: string;
+  numberOfPassengers: number;
+  addOns: string[];
+  alternativeDates: string[];
+}
+
+interface PackageOption {
+  packageId: string;
+  title: string;
+  packageType: string;
+  description: string;
+  duration: string;
+  capacity: number;
+  adultPrice?: number;
+  kidPrice?: number;
+  privateBoatPrice?: number;
+  services: string[];
+}
+
+const steps = [
+  "Customer Info",
+  "Reservation Details",
+  "Other Option",
+  "Confirmation",
+];
 
 const packageTypes = [
   "Day Trip Package 1",
@@ -88,6 +117,7 @@ const packageInfo = [
 const InquiryPage = () => {
   const location = useLocation();
   const searchParams = location.state as SearchParams;
+  const navigate = useNavigate();
 
   const [activeStep, setActiveStep] = useState(0);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -107,7 +137,7 @@ const InquiryPage = () => {
       jettyLocation: searchParams?.jettyPoint || "",
       bookingDate: searchParams?.bookingDate || "",
       numberOfPassengers: searchParams?.passengers || 0,
-      packageType: "Day Trip Package 2",
+      packageType: "",
       addOns: [],
     });
 
@@ -116,6 +146,48 @@ const InquiryPage = () => {
     alternativeDate2: "",
     remarks: "",
   });
+
+  const [bookingConfirmation, setBookingConfirmation] =
+    useState<BookingConfirmation | null>(null);
+
+  const [packages, setPackages] = useState<PackageOption[]>([]);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await axiosInstance.get("/api/packages");
+        console.log("API Response:", response);
+
+        if (!response.data) {
+          throw new Error("No data received from server");
+        }
+
+        if (!Array.isArray(response.data)) {
+          console.error("Received data:", response.data);
+          throw new Error("Invalid data format: expected array");
+        }
+
+        setPackages(response.data);
+      } catch (error) {
+        console.error("Error fetching packages:", {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+        });
+        setError("Failed to load packages. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, []);
 
   const handleInputChange =
     (field: keyof CustomerInfo) =>
@@ -145,6 +217,18 @@ const InquiryPage = () => {
   };
 
   const handleNext = () => {
+    if (activeStep === 0 && !validateCustomerInfo()) {
+      // Show error message
+      return;
+    }
+    if (activeStep === 1 && !validateReservationDetails()) {
+      // Show error message
+      return;
+    }
+    if (activeStep === 2) {
+      handleSubmit();
+      return;
+    }
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -161,14 +245,86 @@ const InquiryPage = () => {
       }));
     };
 
-  const handleSubmit = () => {
-    const bookingData = {
-      customerInfo,
-      reservationDetails,
-      otherOptions,
-    };
-    console.log("Booking Data:", bookingData);
-    // TODO: Implement API call to backend
+  const handleSubmit = async () => {
+    try {
+      // Create the request payload matching our backend structure
+      const bookingRequest = {
+        packageId: reservationDetails.packageType, // We should map this to actual package IDs
+        packageType: "DAYTRIP", // Hardcoded for now since we're only handling day trips
+        bookingDate: new Date(reservationDetails.bookingDate).toISOString(),
+        numberOfPassengers: reservationDetails.numberOfPassengers,
+        jettyLocation: reservationDetails.jettyLocation,
+        customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        customerEmail: customerInfo.email,
+        customerPhone: customerInfo.phoneNumber,
+        specialRequests: otherOptions.remarks,
+        addOns: reservationDetails.addOns,
+        alternativeDate1: otherOptions.alternativeDate1
+          ? new Date(otherOptions.alternativeDate1).toISOString()
+          : null,
+        alternativeDate2: otherOptions.alternativeDate2
+          ? new Date(otherOptions.alternativeDate2).toISOString()
+          : null,
+        customer: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phoneNumber: customerInfo.phoneNumber,
+          addressLine1: customerInfo.addressLine1,
+          addressLine2: customerInfo.addressLine2,
+          postalCode: customerInfo.postalCode,
+          city: customerInfo.city,
+          country: customerInfo.country,
+        },
+      };
+
+      const response = await axiosInstance.post(
+        "/api/bookings",
+        bookingRequest
+      );
+
+      // Update booking confirmation with response data
+      setBookingConfirmation({
+        bookingId: response.data.bookingId,
+        customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+        packageType: reservationDetails.packageType,
+        bookingDate: reservationDetails.bookingDate,
+        numberOfPassengers: reservationDetails.numberOfPassengers,
+        addOns: reservationDetails.addOns,
+        alternativeDates: [
+          otherOptions.alternativeDate1,
+          otherOptions.alternativeDate2,
+        ].filter(Boolean),
+      });
+
+      setActiveStep(3); // Move to confirmation step
+    } catch (error) {
+      console.error("Error submitting booking:", error);
+      // TODO: Add error handling UI feedback
+    }
+  };
+
+  const validateCustomerInfo = () => {
+    const required = [
+      "firstName",
+      "lastName",
+      "email",
+      "phoneNumber",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+    ];
+    return required.every((field) => customerInfo[field as keyof CustomerInfo]);
+  };
+
+  const validateReservationDetails = () => {
+    return (
+      reservationDetails.jettyLocation &&
+      reservationDetails.bookingDate &&
+      reservationDetails.numberOfPassengers > 0 &&
+      reservationDetails.packageType
+    );
   };
 
   const renderReservationDetails = () => (
@@ -206,11 +362,30 @@ const InquiryPage = () => {
               label="Package Type"
               onChange={handleReservationChange("packageType")}
             >
-              {packageTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
+              {isLoading ? (
+                <MenuItem disabled>Loading packages...</MenuItem>
+              ) : error ? (
+                <MenuItem disabled>{error}</MenuItem>
+              ) : packages.length === 0 ? (
+                <MenuItem disabled>No packages available</MenuItem>
+              ) : (
+                packages.map((pkg) => (
+                  <MenuItem key={pkg.packageId} value={pkg.packageId}>
+                    <Box>
+                      <Typography variant="subtitle1">{pkg.title}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {pkg.description} | Duration: {pkg.duration} | Capacity:{" "}
+                        {pkg.capacity} |{" "}
+                        {pkg.privateBoatPrice
+                          ? `RM${pkg.privateBoatPrice} (Private)`
+                          : pkg.adultPrice
+                          ? `From RM${pkg.adultPrice}`
+                          : "Price varies"}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))
+              )}
             </Select>
           </FormControl>
         </Grid>
@@ -358,6 +533,91 @@ const InquiryPage = () => {
     </Paper>
   );
 
+  const renderConfirmation = () => (
+    <Paper elevation={0} sx={{ p: 4, border: "1px solid #e0e0e0" }}>
+      <Box sx={{ textAlign: "center", mb: 4 }}>
+        <Typography variant="h4" gutterBottom sx={{ color: "#0384BD" }}>
+          Thank You for Your Booking!
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+          Your booking has been successfully submitted.
+        </Typography>
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          One of our agents will contact you within the next 24 hours to confirm
+          your booking details.
+        </Typography>
+      </Box>
+
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" gutterBottom>
+          Booking Details
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Booking Reference
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              {bookingConfirmation?.bookingId}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Customer Name
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              {bookingConfirmation?.customerName}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Package Type
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              {bookingConfirmation?.packageType}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Primary Booking Date
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              {bookingConfirmation?.bookingDate}
+            </Typography>
+          </Grid>
+          {bookingConfirmation?.alternativeDates.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Alternative Dates
+              </Typography>
+              {bookingConfirmation.alternativeDates.map((date, index) => (
+                <Typography key={index} variant="body1">
+                  Option {index + 1}: {date}
+                </Typography>
+              ))}
+            </Grid>
+          )}
+        </Grid>
+      </Box>
+
+      <Box sx={{ mt: 4, textAlign: "center" }}>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/")}
+          sx={{
+            bgcolor: "#0384BD",
+            color: "white",
+            "&:hover": {
+              bgcolor: "#026890",
+            },
+          }}
+        >
+          Return to Home
+        </Button>
+      </Box>
+    </Paper>
+  );
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography
@@ -484,6 +744,7 @@ const InquiryPage = () => {
       )}
       {activeStep === 1 && renderReservationDetails()}
       {activeStep === 2 && renderOtherOptions()}
+      {activeStep === 3 && renderConfirmation()}
     </Container>
   );
 };
