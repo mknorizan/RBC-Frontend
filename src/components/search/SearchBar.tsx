@@ -18,8 +18,10 @@ import SearchIcon from "@mui/icons-material/Search";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import DateRangeIcon from "@mui/icons-material/DateRange";
 import PersonIcon from "@mui/icons-material/Person";
+import { useNavigate } from "react-router-dom";
 
 const SearchBar = () => {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [passengers, setPassengers] = useState<number>(0);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -56,6 +58,16 @@ const SearchBar = () => {
   };
 
   const open = Boolean(anchorEl);
+
+  const handleSearch = () => {
+    navigate("/inquiry", {
+      state: {
+        jettyPoint: location,
+        bookingDate: dates,
+        passengers: passengers,
+      },
+    });
+  };
 
   return (
     <Paper
@@ -301,6 +313,7 @@ const SearchBar = () => {
       </Popover>
 
       <IconButton
+        onClick={handleSearch}
         type="button"
         sx={{
           p: "16px",

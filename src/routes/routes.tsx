@@ -1,8 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
-import AboutUsPage from '../pages/AboutUsPage';
-import ContactUsPage from '../pages/ContactUsPage';
-import ServicesPage from '../pages/services/ServicesPage';
+import AboutUsPage from "../pages/AboutUsPage";
+import ContactUsPage from "../pages/ContactUsPage";
+import ServicesPage from "../pages/services/ServicesPage";
+import InquiryPage from "../pages/InquiryPage";
 
 export const router = createBrowserRouter([
   {
@@ -10,15 +11,19 @@ export const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
-    path: '/about',
+    path: "/about",
     element: <AboutUsPage />,
   },
   {
-    path: '/contact',
+    path: "/contact",
     element: <ContactUsPage />,
   },
   {
-    path: '/services/*',
+    path: "/services/*",
     element: <ServicesPage />,
-  }
+  },
+  {
+    path: "/inquiry",
+    element: <InquiryPage />,
+  },
 ]);
