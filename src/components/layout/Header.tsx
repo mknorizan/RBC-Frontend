@@ -16,7 +16,12 @@ import logo from "../../assets/logo-rhumuda.PNG";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import SearchBar from "../search/SearchBar";
 
-const Header = () => {
+// Add prop for hiding search bar
+interface HeaderProps {
+  hideSearch?: boolean;
+}
+
+const Header = ({ hideSearch = false }: HeaderProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const trigger = useScrollTrigger({
     disableHysteresis: true,
@@ -41,12 +46,18 @@ const Header = () => {
 
   return (
     <AppBar
-      position="sticky"
+      position="relative"
       sx={{
         bgcolor: "background.paper",
         boxShadow: trigger ? 1 : 0,
         transition: "all 0.3s",
-        height: trigger ? "140px" : "180px",
+        height: hideSearch
+          ? trigger
+            ? "70px"
+            : "90px" // Height without search bar
+          : trigger
+          ? "140px"
+          : "180px", // Height with search bar
       }}
     >
       {/* Top Row */}
@@ -195,19 +206,21 @@ const Header = () => {
       </Toolbar>
 
       {/* Bottom Row - Search Bar */}
-      <Container maxWidth="lg" sx={{ py: 1 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            width: "100%",
-            maxWidth: "800px",
-            margin: "0 auto",
-          }}
-        >
-          <SearchBar />
-        </Box>
-      </Container>
+      {!hideSearch && (
+        <Container maxWidth="lg" sx={{ py: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              maxWidth: "800px",
+              margin: "0 auto",
+            }}
+          >
+            <SearchBar />
+          </Box>
+        </Container>
+      )}
     </AppBar>
   );
 };

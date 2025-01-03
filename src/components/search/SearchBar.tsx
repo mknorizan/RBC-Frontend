@@ -31,6 +31,8 @@ const SearchBar = () => {
   const tomorrow = dayjs().add(1, "day");
   const maxDate = dayjs().add(3, "months");
 
+  const jettyLocations = ["Rhumuda", "Kuala Terengganu"]; // Exact match with InquiryPage
+
   const handlePassengerClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -61,18 +63,20 @@ const SearchBar = () => {
   const open = Boolean(anchorEl);
 
   const handleSearch = () => {
-    if (!selectedDate) {
-      // Optional: Add error handling for missing date
-      return;
-    }
+    // Format the jetty point to match exactly
+    const formattedJettyPoint = jettyLocations.find(
+      (location) => location.toLowerCase() === location.toLowerCase()
+    );
 
-    navigate("/inquiry", {
-      state: {
-        jettyPoint: location,
-        bookingDate: selectedDate.format("DD/MM/YYYY"),
-        passengers: passengers,
-      },
-    });
+    if (formattedJettyPoint) {
+      navigate("/inquiry", {
+        state: {
+          jettyPoint: formattedJettyPoint, // Use the correctly formatted value
+          bookingDate: selectedDate?.format("DD/MM/YYYY"),
+          passengers: Number(passengers),
+        },
+      });
+    }
   };
 
   return (

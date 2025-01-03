@@ -21,9 +21,24 @@ import {
   Checkbox,
   FormControlLabel,
   Button,
+  FormHelperText,
+  Popover,
+  IconButton,
+  CircularProgress,
+  Skeleton,
+  Alert,
 } from "@mui/material";
 import CircleIcon from "@mui/icons-material/Circle";
 import axiosInstance from "../config/axios";
+import Header from "../components/layout/Header";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+import PersonIcon from "@mui/icons-material/Person";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import dayjs from "dayjs";
 
 interface SearchParams {
   jettyPoint: string;
@@ -86,6 +101,12 @@ interface PackageOption {
   services: string[];
 }
 
+interface PackageServices {
+  services: string[];
+  techniques?: string[]; // For fishing packages
+  distance?: string; // For fishing packages
+}
+
 const steps = [
   "Customer Info",
   "Reservation Details",
@@ -114,10 +135,14 @@ const packageInfo = [
   "Safety Equipment",
 ];
 
+const jettyLocations = ["Rhumuda", "Kuala Terengganu"];
+
 const InquiryPage = () => {
   const location = useLocation();
   const searchParams = location.state as SearchParams;
   const navigate = useNavigate();
+
+  console.log("Received search params:", searchParams);
 
   const [activeStep, setActiveStep] = useState(0);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -134,9 +159,9 @@ const InquiryPage = () => {
 
   const [reservationDetails, setReservationDetails] =
     useState<ReservationDetails>({
-      jettyLocation: searchParams?.jettyPoint || "",
-      bookingDate: searchParams?.bookingDate || "",
-      numberOfPassengers: searchParams?.passengers || 0,
+      jettyLocation: "",
+      bookingDate: "",
+      numberOfPassengers: 0,
       packageType: "",
       addOns: [],
     });
@@ -155,32 +180,108 @@ const InquiryPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [touchedFields, setTouchedFields] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  const [passengerAnchorEl, setPassengerAnchorEl] =
+    useState<null | HTMLElement>(null);
+  const [dateAnchorEl, setDateAnchorEl] = useState<null | HTMLElement>(null);
+
+  const [selectedPackage, setSelectedPackage] = useState<PackageOption | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (location.state) {
+      const params = location.state as SearchParams;
+      console.log("Setting reservation details with:", params);
+
+      const matchedLocation = jettyLocations.find(
+        (loc) =>
+          loc.toLowerCase() ===
+          params.jettyPoint.toLowerCase().replace(/-/g, " ")
+      );
+
+      let formattedDate = "";
+      if (params.bookingDate) {
+        const [day, month, year] = params.bookingDate.split("/");
+        formattedDate = `${year}-${month}-${day}`;
+      }
+
+      if (matchedLocation) {
+        setReservationDetails((prev) => ({
+          ...prev,
+          jettyLocation: matchedLocation,
+          bookingDate: formattedDate,
+          numberOfPassengers: Number(params.passengers) || 0,
+        }));
+      } else {
+        console.error(
+          "Received jetty location does not match available options:",
+          {
+            received: params.jettyPoint,
+            available: jettyLocations,
+          }
+        );
+      }
+
+      console.log("Formatted date:", {
+        original: params.bookingDate,
+        formatted: formattedDate,
+      });
+    }
+  }, [location.state]);
+
+  const handlePassengerClick = (event: React.MouseEvent<HTMLElement>) => {
+    setPassengerAnchorEl(event.currentTarget);
+  };
+
+  const handlePassengerClose = () => {
+    setPassengerAnchorEl(null);
+  };
+
+  const handlePassengerChange = (change: number) => {
+    const newValue = reservationDetails.numberOfPassengers + change;
+    if (newValue >= 0 && newValue <= 20) {
+      setReservationDetails((prev) => ({
+        ...prev,
+        numberOfPassengers: newValue,
+      }));
+    }
+  };
+
+  const handleDateClick = (event: React.MouseEvent<HTMLElement>) => {
+    setDateAnchorEl(event.currentTarget);
+  };
+
+  const handleDateClose = () => {
+    setDateAnchorEl(null);
+  };
+
+  const handleDateChange = (date: dayjs.Dayjs | null) => {
+    if (date) {
+      setReservationDetails((prev) => ({
+        ...prev,
+        bookingDate: date.format("YYYY-MM-DD"),
+      }));
+      handleDateClose();
+    }
+  };
+
   useEffect(() => {
     const fetchPackages = async () => {
       setIsLoading(true);
       setError(null);
       try {
         const response = await axiosInstance.get("/api/packages");
-        console.log("API Response:", response);
-
         if (!response.data) {
           throw new Error("No data received from server");
         }
-
-        if (!Array.isArray(response.data)) {
-          console.error("Received data:", response.data);
-          throw new Error("Invalid data format: expected array");
-        }
-
         setPackages(response.data);
       } catch (error) {
-        console.error("Error fetching packages:", {
-          message: error.message,
-          status: error.response?.status,
-          data: error.response?.data,
-          headers: error.response?.headers,
-        });
-        setError("Failed to load packages. Please try again later.");
+        console.error("Error fetching packages:", error);
+        setError("Failed to load packages");
       } finally {
         setIsLoading(false);
       }
@@ -196,14 +297,23 @@ const InquiryPage = () => {
         ...prev,
         [field]: event.target.value,
       }));
+      setTouchedFields((prev) => ({
+        ...prev,
+        [field]: true,
+      }));
     };
 
   const handleReservationChange =
     (field: keyof ReservationDetails) =>
-    (event: React.ChangeEvent<{ value: unknown }>) => {
+    (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
+      const value = event.target.value;
       setReservationDetails((prev) => ({
         ...prev,
-        [field]: event.target.value,
+        [field]: value,
+      }));
+      setTouchedFields((prev) => ({
+        ...prev,
+        [field]: true,
       }));
     };
 
@@ -217,18 +327,24 @@ const InquiryPage = () => {
   };
 
   const handleNext = () => {
-    if (activeStep === 0 && !validateCustomerInfo()) {
-      // Show error message
+    let isValid = true;
+
+    if (activeStep === 0) {
+      isValid = validateCustomerInfo();
+    } else if (activeStep === 1) {
+      isValid = validateReservationDetails();
+    }
+
+    if (!isValid) {
+      // Optionally show an error message
       return;
     }
-    if (activeStep === 1 && !validateReservationDetails()) {
-      // Show error message
-      return;
-    }
+
     if (activeStep === 2) {
       handleSubmit();
       return;
     }
+
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -305,62 +421,334 @@ const InquiryPage = () => {
   };
 
   const validateCustomerInfo = () => {
-    const required = [
+    const requiredFields: (keyof CustomerInfo)[] = [
       "firstName",
       "lastName",
-      "email",
       "phoneNumber",
+      "email",
       "addressLine1",
       "postalCode",
       "city",
       "country",
     ];
-    return required.every((field) => customerInfo[field as keyof CustomerInfo]);
+
+    // Mark all fields as touched when validating
+    const newTouchedFields = requiredFields.reduce(
+      (acc, field) => ({
+        ...acc,
+        [field]: true,
+      }),
+      {}
+    );
+
+    setTouchedFields(newTouchedFields);
+
+    return requiredFields.every((field) => customerInfo[field]);
   };
 
   const validateReservationDetails = () => {
-    return (
-      reservationDetails.jettyLocation &&
-      reservationDetails.bookingDate &&
-      reservationDetails.numberOfPassengers > 0 &&
-      reservationDetails.packageType
+    const requiredFields: (keyof ReservationDetails)[] = [
+      "jettyLocation",
+      "bookingDate",
+      "numberOfPassengers",
+      "packageType",
+    ];
+
+    const newTouchedFields = requiredFields.reduce(
+      (acc, field) => ({
+        ...acc,
+        [field]: true,
+      }),
+      {}
     );
+
+    setTouchedFields(newTouchedFields);
+
+    return requiredFields.every((field) => reservationDetails[field]);
+  };
+
+  const shouldShowError = (field: string) => {
+    return touchedFields[field] && !customerInfo[field];
+  };
+
+  const textFieldSx = (field: string) => ({
+    bgcolor: "white",
+    borderRadius: 1,
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: shouldShowError(field) ? "error.main" : "#e0e0e0",
+      },
+      "&:hover fieldset": {
+        borderColor: shouldShowError(field) ? "error.light" : "#bdbdbd",
+      },
+    },
+    "& .MuiFormLabel-root": {
+      color: shouldShowError(field) ? "error.main" : "inherit",
+    },
+  });
+
+  const shouldShowReservationError = (field: keyof ReservationDetails) => {
+    return touchedFields[field] && !reservationDetails[field];
+  };
+
+  const getPackageServices = (packageId: string): string[] => {
+    // If packages haven't loaded yet, return empty array
+    if (!packages || packages.length === 0) {
+      return [];
+    }
+
+    const selectedPackage = packages.find((pkg) => pkg.packageId === packageId);
+
+    if (!selectedPackage || !selectedPackage.services) {
+      return [];
+    }
+
+    const services = [...selectedPackage.services];
+
+    // Add fishing-specific info if available
+    if ("techniques" in selectedPackage && selectedPackage.techniques) {
+      if (selectedPackage.distance) {
+        services.push(`Distance: ${selectedPackage.distance}`);
+      }
+      selectedPackage.techniques.forEach((technique) => {
+        services.push(`Technique: ${technique}`);
+      });
+    }
+
+    return services;
+  };
+
+  const handlePackageSelection = (packageId: string) => {
+    const selected = packages.find((pkg) => pkg.packageId === packageId);
+    setSelectedPackage(selected || null);
+    handleReservationChange("packageType")({ target: { value: packageId } });
   };
 
   const renderReservationDetails = () => (
-    <Paper elevation={0} sx={{ p: 4, border: "1px solid #e0e0e0" }}>
+    <Paper
+      elevation={0}
+      sx={{ p: 4, border: "1px solid #e0e0e0", bgcolor: "#f5f5f5" }}
+    >
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
-          <TextField
+          <FormControl
             fullWidth
-            label="Jetty Location"
-            value={reservationDetails.jettyLocation}
-            disabled
-          />
+            error={shouldShowReservationError("jettyLocation")}
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: shouldShowReservationError("jettyLocation")
+                    ? "error.main"
+                    : "#e0e0e0",
+                },
+              },
+            }}
+          >
+            <InputLabel required>Jetty Location</InputLabel>
+            <Select
+              value={reservationDetails.jettyLocation}
+              onChange={handleReservationChange("jettyLocation")}
+              label="Jetty Location"
+              onBlur={() =>
+                setTouchedFields((prev) => ({ ...prev, jettyLocation: true }))
+              }
+            >
+              {jettyLocations.map((location) => (
+                <MenuItem key={location} value={location}>
+                  {location}
+                </MenuItem>
+              ))}
+            </Select>
+            {shouldShowReservationError("jettyLocation") && (
+              <FormHelperText>Jetty location is required</FormHelperText>
+            )}
+          </FormControl>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <TextField
+          <FormControl
             fullWidth
-            label="No of Passengers"
-            value={reservationDetails.numberOfPassengers}
-            disabled
-          />
+            error={shouldShowReservationError("numberOfPassengers")}
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: shouldShowReservationError("numberOfPassengers")
+                    ? "error.main"
+                    : "#e0e0e0",
+                },
+              },
+            }}
+          >
+            <TextField
+              required
+              fullWidth
+              label="Passengers"
+              value={`${reservationDetails.numberOfPassengers} Passenger(s)`}
+              onClick={handlePassengerClick}
+              InputProps={{
+                readOnly: true,
+                startAdornment: (
+                  <PersonIcon sx={{ mr: 1, color: "action.active" }} />
+                ),
+              }}
+              error={shouldShowReservationError("numberOfPassengers")}
+              helperText={
+                shouldShowReservationError("numberOfPassengers")
+                  ? "Number of passengers is required"
+                  : ""
+              }
+            />
+          </FormControl>
+          <Popover
+            open={Boolean(passengerAnchorEl)}
+            anchorEl={passengerAnchorEl}
+            onClose={handlePassengerClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "left",
+            }}
+            PaperProps={{
+              sx: {
+                p: 2,
+                width: "300px",
+              },
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Group Size
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 2,
+              }}
+            >
+              <IconButton
+                onClick={() => handlePassengerChange(-1)}
+                disabled={reservationDetails.numberOfPassengers <= 0}
+              >
+                <RemoveIcon />
+              </IconButton>
+              <Typography variant="h6">
+                {reservationDetails.numberOfPassengers}
+              </Typography>
+              <IconButton
+                onClick={() => handlePassengerChange(1)}
+                disabled={reservationDetails.numberOfPassengers >= 20}
+              >
+                <AddIcon />
+              </IconButton>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Maximum 20 passengers allowed
+            </Typography>
+          </Popover>
         </Grid>
         <Grid item xs={12}>
-          <TextField
+          <FormControl
             fullWidth
-            label="Booking Date"
-            value={reservationDetails.bookingDate}
-            disabled
-          />
+            error={shouldShowReservationError("bookingDate")}
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: shouldShowReservationError("bookingDate")
+                    ? "error.main"
+                    : "#e0e0e0",
+                },
+              },
+            }}
+          >
+            <TextField
+              required
+              fullWidth
+              label="Booking Date"
+              value={
+                reservationDetails.bookingDate
+                  ? dayjs(reservationDetails.bookingDate).format("DD/MM/YYYY")
+                  : ""
+              }
+              onClick={handleDateClick}
+              InputProps={{
+                readOnly: true,
+                startAdornment: (
+                  <CalendarTodayIcon sx={{ mr: 1, color: "action.active" }} />
+                ),
+              }}
+              error={shouldShowReservationError("bookingDate")}
+              helperText={
+                shouldShowReservationError("bookingDate")
+                  ? "Booking date is required"
+                  : ""
+              }
+            />
+          </FormControl>
+          <Popover
+            open={Boolean(dateAnchorEl)}
+            anchorEl={dateAnchorEl}
+            onClose={handleDateClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "left",
+            }}
+            PaperProps={{
+              sx: { p: 2 },
+            }}
+          >
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateCalendar
+                value={
+                  reservationDetails.bookingDate
+                    ? dayjs(reservationDetails.bookingDate)
+                    : null
+                }
+                onChange={handleDateChange}
+                minDate={dayjs()}
+                views={["day"]}
+                sx={{
+                  "& .MuiPickersDay-root.Mui-selected": {
+                    backgroundColor: "#0384BD",
+                    "&:hover": {
+                      backgroundColor: "#026890",
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
+          </Popover>
         </Grid>
         <Grid item xs={12}>
-          <FormControl fullWidth>
+          <FormControl
+            fullWidth
+            sx={{
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: "#e0e0e0",
+                },
+              },
+            }}
+          >
             <InputLabel>Package Type</InputLabel>
             <Select
               value={reservationDetails.packageType}
               label="Package Type"
-              onChange={handleReservationChange("packageType")}
+              onChange={(e) => handlePackageSelection(e.target.value)}
             >
               {isLoading ? (
                 <MenuItem disabled>Loading packages...</MenuItem>
@@ -415,16 +803,30 @@ const InquiryPage = () => {
           <Typography variant="h6" gutterBottom>
             Package Info
           </Typography>
-          <List>
-            {packageInfo.map((info, index) => (
-              <ListItem key={index} dense>
-                <ListItemIcon>
-                  <CircleIcon sx={{ fontSize: 8 }} />
-                </ListItemIcon>
-                <ListItemText primary={info} />
-              </ListItem>
-            ))}
-          </List>
+          {isLoading ? (
+            <Box sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <CircularProgress size={20} sx={{ mr: 2 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Loading package details...
+                </Typography>
+              </Box>
+              <Skeleton variant="text" width="60%" sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="40%" sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="70%" sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="50%" sx={{ mb: 1 }} />
+            </Box>
+          ) : error ? (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {error}
+            </Alert>
+          ) : !selectedPackage ? (
+            <Typography color="text.secondary">
+              Please select a package to view details
+            </Typography>
+          ) : (
+            renderPackageDetails(selectedPackage)
+          )}
         </Grid>
       </Grid>
 
@@ -618,134 +1020,331 @@ const InquiryPage = () => {
     </Paper>
   );
 
+  const renderPackageDetails = (pkg: PackageOption) => {
+    if (pkg.packageType === "FISHING") {
+      return (
+        <Box>
+          <Typography>
+            Price from RM{pkg.priceMin} - RM{pkg.priceMax}
+          </Typography>
+          <Typography>Rent up to {pkg.duration}</Typography>
+          <Typography>{pkg.capacity} persons max capacity</Typography>
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Service Includes:
+          </Typography>
+          <List>
+            {pkg.services.map((service, index) => (
+              <ListItem key={index} dense>
+                <ListItemIcon>
+                  <CircleIcon sx={{ fontSize: 8 }} />
+                </ListItemIcon>
+                <ListItemText primary={service} />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      );
+    }
+
+    return (
+      <Box>
+        {pkg.privateBoatPrice ? (
+          <Typography>RM{pkg.privateBoatPrice} | Private boat</Typography>
+        ) : (
+          <>
+            <Typography>RM{pkg.adultPrice} | Adult</Typography>
+            {pkg.kidPrice && (
+              <Typography>RM{pkg.kidPrice} | Kids (4-11)</Typography>
+            )}
+            <Typography>FREE | Kids (0-3)</Typography>
+          </>
+        )}
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Service Includes:
+        </Typography>
+        <List>
+          {pkg.services.map((service, index) => (
+            <ListItem key={index} dense>
+              <ListItemIcon>
+                <CircleIcon sx={{ fontSize: 8 }} />
+              </ListItemIcon>
+              <ListItemText primary={service} />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    );
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography
-        variant="h4"
-        gutterBottom
-        align="center"
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.default",
+      }}
+    >
+      <Header hideSearch={true} />
+      <Container
+        maxWidth="lg"
         sx={{
-          fontFamily: "Playfair Display, serif",
-          mb: 4,
+          py: 6,
+          flex: 1,
+          mt: 2,
         }}
       >
-        Booking Details
-      </Typography>
+        <Typography
+          variant="h4"
+          gutterBottom
+          align="center"
+          sx={{
+            fontFamily: "Playfair Display, serif",
+            mb: 4,
+          }}
+        >
+          Booking Details
+        </Typography>
 
-      <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
+        <Stepper
+          activeStep={activeStep}
+          sx={{
+            mb: 6,
+            "& .MuiStepConnector-line": {
+              marginTop: "12px",
+            },
+          }}
+        >
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel
+                StepIconProps={{
+                  sx: {
+                    width: 40,
+                    height: 40,
+                    "& .MuiStepIcon-text": {
+                      display: "none",
+                    },
+                    "&.Mui-active": {
+                      color: "#0384BD",
+                    },
+                    "&.Mui-completed": {
+                      color: "#0384BD",
+                    },
+                  },
+                }}
+                sx={{
+                  flexDirection: "column",
+                  alignItems: "center",
+                  "& .MuiStepLabel-label": {
+                    marginTop: 1,
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    mt: 1.5,
+                    textAlign: "center",
+                  },
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
 
-      {activeStep === 0 && (
-        <Paper elevation={0} sx={{ p: 4, border: "1px solid #e0e0e0" }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="First Name"
-                value={customerInfo.firstName}
-                onChange={handleInputChange("firstName")}
-              />
+        {activeStep === 0 && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              border: "1px solid #e0e0e0",
+              bgcolor: "#f5f5f5",
+            }}
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="First Name"
+                  value={customerInfo.firstName}
+                  onChange={handleInputChange("firstName")}
+                  error={shouldShowError("firstName")}
+                  helperText={
+                    shouldShowError("firstName") ? "First name is required" : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, firstName: true }))
+                  }
+                  sx={textFieldSx("firstName")}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Last Name"
+                  value={customerInfo.lastName}
+                  onChange={handleInputChange("lastName")}
+                  error={shouldShowError("lastName")}
+                  helperText={
+                    shouldShowError("lastName") ? "Last name is required" : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, lastName: true }))
+                  }
+                  sx={textFieldSx("lastName")}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Phone Number"
+                  value={customerInfo.phoneNumber}
+                  onChange={handleInputChange("phoneNumber")}
+                  error={shouldShowError("phoneNumber")}
+                  helperText={
+                    shouldShowError("phoneNumber")
+                      ? "Phone number is required"
+                      : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, phoneNumber: true }))
+                  }
+                  sx={textFieldSx("phoneNumber")}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  type="email"
+                  label="Email Address"
+                  value={customerInfo.email}
+                  onChange={handleInputChange("email")}
+                  error={shouldShowError("email")}
+                  helperText={
+                    shouldShowError("email") ? "Email is required" : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, email: true }))
+                  }
+                  sx={textFieldSx("email")}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Address Line 1"
+                  value={customerInfo.addressLine1}
+                  onChange={handleInputChange("addressLine1")}
+                  error={shouldShowError("addressLine1")}
+                  helperText={
+                    shouldShowError("addressLine1")
+                      ? "Address line 1 is required"
+                      : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({
+                      ...prev,
+                      addressLine1: true,
+                    }))
+                  }
+                  sx={textFieldSx("addressLine1")}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Address Line 2"
+                  value={customerInfo.addressLine2}
+                  onChange={handleInputChange("addressLine2")}
+                  sx={{
+                    bgcolor: "white",
+                    borderRadius: 1,
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
+                        borderColor: "#e0e0e0",
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Postal Code"
+                  value={customerInfo.postalCode}
+                  onChange={handleInputChange("postalCode")}
+                  error={shouldShowError("postalCode")}
+                  helperText={
+                    shouldShowError("postalCode")
+                      ? "Postal code is required"
+                      : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, postalCode: true }))
+                  }
+                  sx={textFieldSx("postalCode")}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  required
+                  fullWidth
+                  label="City"
+                  value={customerInfo.city}
+                  onChange={handleInputChange("city")}
+                  error={shouldShowError("city")}
+                  helperText={shouldShowError("city") ? "City is required" : ""}
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, city: true }))
+                  }
+                  sx={textFieldSx("city")}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Country"
+                  value={customerInfo.country}
+                  onChange={handleInputChange("country")}
+                  error={shouldShowError("country")}
+                  helperText={
+                    shouldShowError("country") ? "Country is required" : ""
+                  }
+                  onBlur={() =>
+                    setTouchedFields((prev) => ({ ...prev, country: true }))
+                  }
+                  sx={textFieldSx("country")}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="Last Name"
-                value={customerInfo.lastName}
-                onChange={handleInputChange("lastName")}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                label="Phone Number"
-                value={customerInfo.phoneNumber}
-                onChange={handleInputChange("phoneNumber")}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                type="email"
-                label="Email Address"
-                value={customerInfo.email}
-                onChange={handleInputChange("email")}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                label="Address Line 1"
-                value={customerInfo.addressLine1}
-                onChange={handleInputChange("addressLine1")}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Address Line 2"
-                value={customerInfo.addressLine2}
-                onChange={handleInputChange("addressLine2")}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                required
-                fullWidth
-                label="Postal Code"
-                value={customerInfo.postalCode}
-                onChange={handleInputChange("postalCode")}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                required
-                fullWidth
-                label="City"
-                value={customerInfo.city}
-                onChange={handleInputChange("city")}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                required
-                fullWidth
-                label="Country"
-                value={customerInfo.country}
-                onChange={handleInputChange("country")}
-              />
-            </Grid>
-          </Grid>
 
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
-            <Button
-              onClick={handleNext}
-              sx={{
-                bgcolor: "#0384BD",
-                color: "white",
-                "&:hover": {
-                  bgcolor: "#026890",
-                },
-              }}
-            >
-              Next
-            </Button>
-          </Box>
-        </Paper>
-      )}
-      {activeStep === 1 && renderReservationDetails()}
-      {activeStep === 2 && renderOtherOptions()}
-      {activeStep === 3 && renderConfirmation()}
-    </Container>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+              <Button
+                onClick={handleNext}
+                sx={{
+                  bgcolor: "#0384BD",
+                  color: "white",
+                  "&:hover": {
+                    bgcolor: "#026890",
+                  },
+                }}
+              >
+                Next
+              </Button>
+            </Box>
+          </Paper>
+        )}
+        {activeStep === 1 && renderReservationDetails()}
+        {activeStep === 2 && renderOtherOptions()}
+        {activeStep === 3 && renderConfirmation()}
+      </Container>
+    </Box>
   );
 };
 
