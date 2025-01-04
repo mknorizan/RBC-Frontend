@@ -5,7 +5,11 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-    "typeRoots": ["./node_modules/@types", "src/v1/types"]
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"]
+    "composite": true,
+    "typeRoots": ["./node_modules/@types"],
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
 }

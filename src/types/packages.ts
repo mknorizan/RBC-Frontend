@@ -1,29 +1,19 @@
-export interface FishingPackage {
-  id: string;
-  type: "fishing";
-  title: string;
-  image?: string;
-  description: string;
-  priceRange: {
-    min: number;
-    max: number;
-  };
-  duration: string;
-  capacity: number;
-  distance: string;
-  services: string[];
+export interface PackageOption {
+  id: number;
+  name: string;
+  title?: string;
+  type: string;
+  priceMin: number;
+  priceMax: number;
+  distance?: string;
   techniques: string[];
+  services: string[];
 }
 
-export interface BoatPackage {
-  id: string;
-  type: "boat";
-  title: string;
-  description: string;
-  privateBoatPrice?: number;
-  adultPrice?: number;
-  kidPrice?: number;
-  duration: string;
-  capacity: number;
-  services: string[];
+export interface RecreationPackage extends PackageOption {
+  type: "recreation";
+}
+
+export interface FishingPackage extends PackageOption {
+  type: "fishing";
 }
