@@ -1,8 +1,8 @@
 import React from "react";
 import { Box, IconButton, Container } from "@mui/material";
-import kayakIcon from "../../assets/icons/kayak-1.png";
-import beachIcon from "../../assets/icons/beach-1.png";
-import boatIcon from "../../assets/icons/boat-1.png";
+import fishingIcon from "../../assets/icons/fishing_color.png";
+import islandIcon from "../../assets/icons/island_color.png";
+import boatIcon from "../../assets/icons/boat_color.png";
 
 interface CharterTypeSelectorProps {
   selectedType: "recreation" | "fishing" | "boat";
@@ -29,6 +29,41 @@ const CharterTypeSelector = ({
             flexDirection: "column",
             alignItems: "center",
             borderBottom:
+              selectedType === "boat" ? "2px solid #4CAF50" : "none",
+            pb: 0.1,
+          }}
+        >
+          <IconButton
+            onClick={() => onTypeChange("boat")}
+            sx={{
+              width: 90,
+              height: 90,
+              p: 0.25,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                backgroundColor: "transparent",
+                transform: "scale(1.05)",
+              },
+            }}
+          >
+            <img
+              src={boatIcon}
+              alt="Boat Charter"
+              style={{
+                width: "80px",
+                height: "80px",
+                objectFit: "contain",
+              }}
+            />
+          </IconButton>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            borderBottom:
               selectedType === "recreation" ? "2px solid #4CAF50" : "none",
             pb: 0.1,
           }}
@@ -47,7 +82,7 @@ const CharterTypeSelector = ({
             }}
           >
             <img
-              src={beachIcon}
+              src={islandIcon}
               alt="Recreation"
               style={{
                 width: "80px",
@@ -82,43 +117,8 @@ const CharterTypeSelector = ({
             }}
           >
             <img
-              src={kayakIcon}
+              src={fishingIcon}
               alt="Fishing"
-              style={{
-                width: "80px",
-                height: "80px",
-                objectFit: "contain",
-              }}
-            />
-          </IconButton>
-        </Box>
-
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            borderBottom:
-              selectedType === "boat" ? "2px solid #4CAF50" : "none",
-            pb: 0.1,
-          }}
-        >
-          <IconButton
-            onClick={() => onTypeChange("boat")}
-            sx={{
-              width: 90,
-              height: 90,
-              p: 0.25,
-              transition: "all 0.3s ease",
-              "&:hover": {
-                backgroundColor: "transparent",
-                transform: "scale(1.05)",
-              },
-            }}
-          >
-            <img
-              src={boatIcon}
-              alt="Boat Charter"
               style={{
                 width: "80px",
                 height: "80px",

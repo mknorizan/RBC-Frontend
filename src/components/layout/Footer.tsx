@@ -1,55 +1,55 @@
-import React from 'react';
-import { Box, Typography, Container, IconButton, Divider } from '@mui/material';
-import FacebookIcon from '@mui/icons-material/Facebook';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import XIcon from '@mui/icons-material/X'; // The new Twitter/X icon
+import React from "react";
+import { Box, Typography, Container, IconButton, Divider } from "@mui/material";
+import FacebookIcon from "@mui/icons-material/Facebook";
+import InstagramIcon from "@mui/icons-material/Instagram";
+import TikTokIcon from "@mui/icons-material/MusicNote"; // We'll use MusicNote as TikTok icon for now
 
 const Footer = () => {
   return (
     <>
-      <Divider sx={{ borderColor: '#000' }} />
+      <Divider sx={{ borderColor: "#000" }} />
       <Container maxWidth="lg">
         <Box
           sx={{
             py: 2,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
           {/* Copyright Text */}
-          <Typography sx={{ fontSize: '0.9rem' }}>
+          <Typography sx={{ fontSize: "0.9rem" }}>
             © 2025 Rhumuda Boat Charter
           </Typography>
 
           {/* Social Media Icons */}
           <Box>
             <IconButton
-              href="https://facebook.com"
+              href="https://www.facebook.com/rhumudaboatcharter"
               target="_blank"
               rel="noopener noreferrer"
               size="small"
-              sx={{ color: '#000' }}
+              sx={{ color: "#000" }}
             >
               <FacebookIcon />
             </IconButton>
             <IconButton
-              href="https://instagram.com"
+              href="https://www.instagram.com/rhumudaboatcharter"
               target="_blank"
               rel="noopener noreferrer"
               size="small"
-              sx={{ color: '#000' }}
+              sx={{ color: "#000" }}
             >
               <InstagramIcon />
             </IconButton>
             <IconButton
-              href="https://x.com"
+              href="https://www.tiktok.com/@rhumudaboatcharter"
               target="_blank"
               rel="noopener noreferrer"
               size="small"
-              sx={{ color: '#000' }}
+              sx={{ color: "#000" }}
             >
-              <XIcon />
+              <TikTokIcon />
             </IconButton>
           </Box>
         </Box>
@@ -58,4 +58,4 @@ const Footer = () => {
   );
 };
 
-export default Footer; 
+export default Footer;

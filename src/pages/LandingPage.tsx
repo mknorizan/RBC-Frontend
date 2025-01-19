@@ -13,7 +13,7 @@ import ServicesOffered from "../components/services/ServicesOffered";
 const LandingPage = () => {
   const [selectedType, setSelectedType] = useState<
     "recreation" | "fishing" | "boat"
-  >("recreation");
+  >("boat");
 
   return (
     <Box

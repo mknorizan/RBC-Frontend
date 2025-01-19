@@ -834,11 +834,9 @@ const InquiryPage = () => {
                 </MenuItem>
               ) : packages && packages.length > 0 ? (
                 packages.map((pkg) => (
-                  <MenuItem key={pkg.id} value={pkg.id.toString()}>
+                  <MenuItem key={pkg.id} value={pkg.id}>
                     <Box>
-                      <Typography variant="subtitle1">
-                        {pkg.name || pkg.title}
-                      </Typography>
+                      <Typography variant="subtitle1">{pkg.title}</Typography>
                       <Typography variant="body2" color="text.secondary">
                         {pkg.description} | Duration: {pkg.duration} | Capacity:{" "}
                         {pkg.capacity} |{" "}

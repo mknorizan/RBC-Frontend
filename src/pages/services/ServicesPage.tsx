@@ -14,6 +14,7 @@ import SearchBar from "../../components/search/SearchBar";
 import PrivateBoatService from "./PrivateBoatService";
 import FishingCharterService from "./FishingCharterService";
 import IslandDayTripService from "./IslandDayTripService";
+import RoundIslandService from "./RoundIslandService";
 
 const ServicesPage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const ServicesPage = () => {
 
   const services = [
     { path: "private-boat", label: "Private Boat" },
+    { path: "round-island", label: "Round Island" },
     { path: "fishing-charters", label: "Fishing Charters" },
     { path: "island-day-trip", label: "Island Day Trip" },
   ];
@@ -77,6 +79,7 @@ const ServicesPage = () => {
             <Routes>
               <Route index element={<PrivateBoatService />} />
               <Route path="private-boat" element={<PrivateBoatService />} />
+              <Route path="round-island" element={<RoundIslandService />} />
               <Route
                 path="fishing-charters"
                 element={<FishingCharterService />}

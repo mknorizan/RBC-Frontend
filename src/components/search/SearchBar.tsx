@@ -69,9 +69,9 @@ const SearchBar = () => {
     );
 
     if (formattedJettyPoint) {
-      navigate("/inquiry", {
+      navigate("/inquiry/info", {
         state: {
-          jettyPoint: formattedJettyPoint, // Use the correctly formatted value
+          jettyPoint: formattedJettyPoint,
           bookingDate: selectedDate?.format("DD/MM/YYYY"),
           passengers: Number(passengers),
         },

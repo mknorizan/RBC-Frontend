@@ -1,0 +1,14 @@
+# Get latest commits form GitHub
+1. Pull latest commits from branch 'initial/setup' for the backend
+2. Pull latest commits from branch 'initial-project-setup' for the frontend
+
+# Setup database
+3. Access the database through 'http://localhost/phpmyadmin/'
+4. Create a new database called 'rhumuda_db'
+5. Import the file 'rhumuda_db.sql' from the backend folder
+
+# Run the project
+6. Run 'mvn clean install' for the backend
+7. Run 'mvn spring-boot:run' for the backend
+8. Run 'npm install' for the frontend
+9. Access the project through 'https://bejewelled-alpaca-a805c8.netlify.app/'

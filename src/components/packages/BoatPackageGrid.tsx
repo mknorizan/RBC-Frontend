@@ -2,12 +2,15 @@ import React from "react";
 import { Grid, Container, Typography } from "@mui/material";
 import PackageCard from "./PackageCard";
 import { BoatPackage } from "../../types/packages";
+import rhumudaBoat from "../../assets/boat/rhumuda_boat.jpg";
+import boatCharter1 from "../../assets/boat/boat_charter_1.jpg";
 
 const boatPackages: BoatPackage[] = [
   {
     id: "boat1",
     type: "boat",
     title: "Package 1",
+    image: rhumudaBoat,
     description: "Private boat charter package",
     privateBoatPrice: 750,
     duration: "4 hours",
@@ -18,6 +21,7 @@ const boatPackages: BoatPackage[] = [
     id: "boat2",
     type: "boat",
     title: "Package 2",
+    image: boatCharter1,
     description: "Group boat charter package",
     adultPrice: 49,
     kidPrice: 35,
