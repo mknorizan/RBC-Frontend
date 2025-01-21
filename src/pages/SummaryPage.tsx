@@ -316,11 +316,17 @@ const SummaryPage = () => {
         {/* First Paper - Booking Reference and Selected Package */}
         <Paper
           elevation={0}
-          sx={{ p: 4, border: "1px solid #e0e0e0", bgcolor: "#f5f5f5", mb: 4 }}
+          sx={{
+            p: 4,
+            border: "none",
+            bgcolor: "transparent",
+            borderBottom: "1px solid #e0e0e0",
+            mb: 4,
+          }}
         >
           <Box sx={{ mb: 4 }}>
             <Typography variant="h6" gutterBottom>
-              Booking Reference Number
+              Booking ID:
             </Typography>
             <Typography
               variant="h5"
@@ -332,7 +338,7 @@ const SummaryPage = () => {
 
           <Box>
             <Typography variant="h6" gutterBottom>
-              Selected Package
+              Package:
             </Typography>
             {isLoading ? (
               <CircularProgress size={24} />
@@ -360,7 +366,13 @@ const SummaryPage = () => {
         {/* Second Paper - Description */}
         <Paper
           elevation={0}
-          sx={{ p: 4, border: "1px solid #e0e0e0", bgcolor: "#f5f5f5", mb: 4 }}
+          sx={{
+            p: 4,
+            border: "none",
+            bgcolor: "transparent",
+            borderBottom: "1px solid #e0e0e0",
+            mb: 4,
+          }}
         >
           <Box>
             <Typography
