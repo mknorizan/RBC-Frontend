@@ -313,20 +313,12 @@ const SummaryPage = () => {
     >
       <Header hideSearch={true} />
       <Container maxWidth="lg" sx={{ py: 6, flex: 1, mt: 2 }}>
+        {/* First Paper - Booking Reference and Selected Package */}
         <Paper
           elevation={0}
           sx={{ p: 4, border: "1px solid #e0e0e0", bgcolor: "#f5f5f5", mb: 4 }}
         >
-          <Typography
-            variant="h4"
-            gutterBottom
-            align="center"
-            sx={{ fontFamily: "Playfair Display, serif", mb: 4 }}
-          >
-            Booking Summary
-          </Typography>
-
-          <Box sx={{ textAlign: "center", mb: 4 }}>
+          <Box sx={{ mb: 4 }}>
             <Typography variant="h6" gutterBottom>
               Booking Reference Number
             </Typography>
@@ -338,7 +330,7 @@ const SummaryPage = () => {
             </Typography>
           </Box>
 
-          <Box sx={{ textAlign: "center", mb: 4 }}>
+          <Box>
             <Typography variant="h6" gutterBottom>
               Selected Package
             </Typography>
@@ -363,15 +355,20 @@ const SummaryPage = () => {
               </Typography>
             )}
           </Box>
+        </Paper>
 
-          <Box sx={{ textAlign: "center", mb: 4, mt: 4 }}>
+        {/* Second Paper - Description */}
+        <Paper
+          elevation={0}
+          sx={{ p: 4, border: "1px solid #e0e0e0", bgcolor: "#f5f5f5", mb: 4 }}
+        >
+          <Box>
             <Typography
               variant="body1"
               sx={{
                 color: "#555",
                 lineHeight: 1.8,
                 maxWidth: "800px",
-                margin: "0 auto",
                 fontStyle: "italic",
               }}
             >
@@ -388,7 +385,7 @@ const SummaryPage = () => {
                 color: "#555",
                 lineHeight: 1.8,
                 maxWidth: "800px",
-                margin: "16px auto 0",
+                marginTop: "16px",
                 fontStyle: "italic",
               }}
             >
