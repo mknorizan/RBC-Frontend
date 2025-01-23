@@ -227,22 +227,35 @@ const SummaryPage = () => {
 
         {/* Distance Information */}
         {pkg.distance && (
-          <Grid item xs={12}>
-            <Typography variant="body1" sx={{ color: "#555", mt: 1 }}>
-              Distance: {pkg.distance}
+          <Grid item xs={12} sx={{ mb: 0, pb: 0 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "#555",
+                mb: 0,
+                pb: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              {pkg.distance} distance covered
             </Typography>
           </Grid>
         )}
 
         {/* Add-ons Section */}
         {reservationDetails.addOns && reservationDetails.addOns.length > 0 && (
-          <Grid item xs={12}>
+          <Grid item xs={12} sx={{ mt: 0, pt: 0 }}>
             <Typography
               variant="subtitle1"
-              gutterBottom
-              sx={{ color: "#555", mt: 2 }}
+              sx={{
+                color: "#555",
+                mt: 0,
+                pt: 0,
+                mb: 1,
+                lineHeight: 1.5,
+              }}
             >
-              Selected Add-ons:
+              Add-ons:
             </Typography>
             <List dense>
               {reservationDetails.addOns.map((addonId) => {
@@ -517,13 +530,15 @@ const SummaryPage = () => {
               elevation={0}
               sx={{
                 p: 4,
+                pt: 3,
+                pb: 3,
                 border: "none",
                 bgcolor: "transparent",
                 borderBottom: "1px solid #e0e0e0",
-                mb: 4,
+                mb: 3,
               }}
             >
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h4" gutterBottom>
                 Services
               </Typography>
 
@@ -561,8 +576,16 @@ const SummaryPage = () => {
 
                   {/* Distance Information */}
                   {selectedPackage.distance && (
-                    <Grid item xs={12}>
-                      <Typography variant="body1" sx={{ color: "#555" }}>
+                    <Grid item xs={12} sx={{ mb: 0, pb: 0 }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: "#555",
+                          mb: 0,
+                          pb: 0,
+                          lineHeight: 1.5,
+                        }}
+                      >
                         {selectedPackage.distance} distance covered
                       </Typography>
                     </Grid>
@@ -571,11 +594,16 @@ const SummaryPage = () => {
                   {/* Add-ons Section */}
                   {reservationDetails.addOns &&
                     reservationDetails.addOns.length > 0 && (
-                      <Grid item xs={12}>
+                      <Grid item xs={12} sx={{ mt: 0, pt: 0 }}>
                         <Typography
                           variant="subtitle1"
-                          gutterBottom
-                          sx={{ color: "#555", mt: 2 }}
+                          sx={{
+                            color: "#555",
+                            mt: 0,
+                            pt: 0,
+                            mb: 1,
+                            lineHeight: 1.5,
+                          }}
                         >
                           Add-ons:
                         </Typography>
