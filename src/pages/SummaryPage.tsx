@@ -642,13 +642,14 @@ const SummaryPage = () => {
               elevation={0}
               sx={{
                 p: 4,
+                pb: 10,
                 border: "none",
                 bgcolor: "transparent",
                 borderBottom: "1px solid #e0e0e0",
                 mb: 4,
               }}
             >
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h4" gutterBottom>
                 Location
               </Typography>
 
@@ -723,13 +724,14 @@ const SummaryPage = () => {
               elevation={0}
               sx={{
                 p: 4,
+                pb: 10,
                 border: "none",
                 bgcolor: "transparent",
                 borderBottom: "1px solid #e0e0e0",
                 mb: 4,
               }}
             >
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h4" gutterBottom>
                 Cancellation Policy
               </Typography>
               <Typography variant="body1" sx={{ color: "#555" }}>
@@ -775,7 +777,7 @@ const SummaryPage = () => {
               </Typography>
 
               <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" gutterBottom>
+                <Typography variant="subtitle1" sx={{ color: "#000" }} gutterBottom>
                   Jetty Location
                 </Typography>
                 <Typography variant="body1" sx={{ color: "#555" }}>
@@ -785,7 +787,7 @@ const SummaryPage = () => {
 
               <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={6}>
-                  <Typography variant="subtitle1" gutterBottom>
+                  <Typography variant="subtitle1" sx={{ color: "#000" }} gutterBottom>
                     Date
                   </Typography>
                   <Typography variant="body1" sx={{ color: "#555" }}>
@@ -793,7 +795,7 @@ const SummaryPage = () => {
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="subtitle1" gutterBottom>
+                  <Typography variant="subtitle1" sx={{ color: "#000" }} gutterBottom>
                     Group Size
                   </Typography>
                   <Typography variant="body1" sx={{ color: "#555" }}>
