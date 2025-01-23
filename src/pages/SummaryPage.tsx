@@ -314,52 +314,47 @@ const SummaryPage = () => {
               elevation={0}
               sx={{
                 p: 4,
+                pb: 3,
                 border: "none",
                 bgcolor: "transparent",
                 borderBottom: "1px solid #e0e0e0",
-                mb: 4,
+                mb: 3,
               }}
             >
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" gutterBottom>
-                  Booking ID:
-                </Typography>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontWeight: "bold",
-                    color: "#0384BD",
-                    letterSpacing: 1,
-                  }}
-                >
-                  {bookingId}
-                </Typography>
-              </Box>
-
               <Box>
-                <Typography variant="h6" gutterBottom>
-                  Package:
-                </Typography>
-                {isLoading ? (
-                  <CircularProgress size={24} />
-                ) : error ? (
-                  <Alert severity="error" sx={{ mt: 1 }}>
-                    {error}
-                  </Alert>
-                ) : selectedPackage ? (
-                  <Typography
-                    variant="h5"
-                    sx={{ color: "#333", fontWeight: "500" }}
+                <Typography variant="h4" gutterBottom>
+                  Booking ID:{" "}
+                  <Box
+                    component="span"
+                    sx={{ color: "#0384BD", fontWeight: 500 }}
                   >
-                    {selectedPackage.title ||
-                      selectedPackage.name ||
-                      selectedPackage.description}
-                  </Typography>
-                ) : (
-                  <Typography color="text.secondary">
-                    No package selected
-                  </Typography>
-                )}
+                    {bookingId}
+                  </Box>
+                </Typography>
+
+                <Typography variant="h4" gutterBottom>
+                  Package:{" "}
+                  {isLoading ? (
+                    <CircularProgress size={24} />
+                  ) : error ? (
+                    <Alert severity="error" sx={{ mt: 1 }}>
+                      {error}
+                    </Alert>
+                  ) : selectedPackage ? (
+                    <Box
+                      component="span"
+                      sx={{ color: "#333", fontWeight: 500 }}
+                    >
+                      {selectedPackage.title ||
+                        selectedPackage.name ||
+                        selectedPackage.description}
+                    </Box>
+                  ) : (
+                    <Typography component="span" color="text.secondary">
+                      No package selected
+                    </Typography>
+                  )}
+                </Typography>
               </Box>
             </Paper>
 
@@ -368,6 +363,7 @@ const SummaryPage = () => {
               elevation={0}
               sx={{
                 p: 4,
+                pt: 3,
                 border: "none",
                 bgcolor: "transparent",
                 borderBottom: "1px solid #e0e0e0",
@@ -414,69 +410,106 @@ const SummaryPage = () => {
               elevation={0}
               sx={{
                 p: 4,
+                pt: 3,
+                pb: 10,
                 border: "none",
                 bgcolor: "transparent",
                 borderBottom: "1px solid #e0e0e0",
-                mb: 4,
+                mb: 3,
               }}
             >
-              <Box
+              <Typography variant="h4" gutterBottom>
+                Customer Details
+              </Typography>
+
+              <Paper
+                elevation={0}
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 3,
+                  p: 3,
+                  border: "1px solid #e0e0e0",
+                  bgcolor: "#fff",
+                  position: "relative",
                 }}
               >
-                <Typography variant="h6">Customer Details</Typography>
-                <Button
-                  onClick={handleEditCustomerInfo}
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    bgcolor: "#0384BD",
-                    color: "white",
-                    "&:hover": {
-                      bgcolor: "#026890",
-                    },
-                  }}
-                >
-                  Edit Details
-                </Button>
-              </Box>
+                <Grid container spacing={4}>
+                  <Grid item xs={12} md={6}>
+                    <Box>
+                      <Typography variant="body1" gutterBottom>
+                        <Box
+                          component="span"
+                          sx={{ color: "#000", fontWeight: "bold" }}
+                        >
+                          Name:{" "}
+                        </Box>
+                        {customerInfo.firstName} {customerInfo.lastName}
+                      </Typography>
 
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Name:</strong> {customerInfo.firstName}{" "}
-                    {customerInfo.lastName}
-                  </Typography>
+                      <Typography variant="body1" gutterBottom sx={{ mt: 2 }}>
+                        <Box
+                          component="span"
+                          sx={{ color: "#000", fontWeight: "bold" }}
+                        >
+                          Email:{" "}
+                        </Box>
+                        {customerInfo.email}
+                      </Typography>
 
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Email:</strong> {customerInfo.email}
-                  </Typography>
+                      <Typography variant="body1" gutterBottom sx={{ mt: 2 }}>
+                        <Box
+                          component="span"
+                          sx={{ color: "#000", fontWeight: "bold" }}
+                        >
+                          Phone:{" "}
+                        </Box>
+                        {customerInfo.phoneNumber}
+                      </Typography>
+                    </Box>
+                  </Grid>
 
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Phone:</strong> {customerInfo.phoneNumber}
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Address:</strong> {customerInfo.addressLine1}
-                    {customerInfo.addressLine2 && (
-                      <>
+                  <Grid item xs={12} md={6}>
+                    <Box>
+                      <Typography variant="body1">
+                        <Box
+                          component="span"
+                          sx={{ color: "#000", fontWeight: "bold" }}
+                        >
+                          Address:{" "}
+                        </Box>
+                        {customerInfo.addressLine1}
+                        {customerInfo.addressLine2 && (
+                          <>
+                            <br />
+                            {customerInfo.addressLine2}
+                          </>
+                        )}
                         <br />
-                        {customerInfo.addressLine2}
-                      </>
-                    )}
-                    <br />
-                    {customerInfo.city}, {customerInfo.postalCode}
-                    <br />
-                    {customerInfo.country}
-                  </Typography>
+                        {customerInfo.city}, {customerInfo.postalCode}
+                        <br />
+                        {customerInfo.country}
+                      </Typography>
+                    </Box>
+                  </Grid>
                 </Grid>
-              </Grid>
+
+                <Box
+                  sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}
+                >
+                  <Button
+                    onClick={handleEditCustomerInfo}
+                    variant="contained"
+                    size="small"
+                    sx={{
+                      bgcolor: "#0384BD",
+                      color: "white",
+                      "&:hover": {
+                        bgcolor: "#026890",
+                      },
+                    }}
+                  >
+                    Edit Details
+                  </Button>
+                </Box>
+              </Paper>
             </Paper>
 
             {/* Services Section */}
