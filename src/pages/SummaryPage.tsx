@@ -231,7 +231,7 @@ const SummaryPage = () => {
             <Typography
               variant="body1"
               sx={{
-                color: "#555",
+                color: "#000",
                 mb: 0,
                 pb: 0,
                 lineHeight: 1.5,
@@ -248,7 +248,7 @@ const SummaryPage = () => {
             <Typography
               variant="subtitle1"
               sx={{
-                color: "#555",
+                color: "#000",
                 mt: 0,
                 pt: 0,
                 mb: 1,
@@ -268,7 +268,7 @@ const SummaryPage = () => {
                     <ListItemText
                       primary={`${addon.name} (RM ${addon.price})`}
                       primaryTypographyProps={{
-                        sx: { color: "#555" },
+                        sx: { color: "#000" },
                       }}
                     />
                   </ListItem>
@@ -580,7 +580,7 @@ const SummaryPage = () => {
                       <Typography
                         variant="body1"
                         sx={{
-                          color: "#555",
+                          color: "#000",
                           mb: 0,
                           pb: 0,
                           lineHeight: 1.5,
@@ -598,7 +598,7 @@ const SummaryPage = () => {
                         <Typography
                           variant="subtitle1"
                           sx={{
-                            color: "#555",
+                            color: "#000",
                             mt: 0,
                             pt: 0,
                             mb: 1,
