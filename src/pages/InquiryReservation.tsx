@@ -32,6 +32,7 @@ import Header from "../components/layout/Header";
 import axiosInstance from "../config/axios";
 import CircleIcon from "@mui/icons-material/Circle";
 import { CheckCircleOutline } from "@mui/icons-material";
+import InquirySteps from "../components/layout/InquirySteps";
 
 interface SearchParams {
   jettyPoint: string;
@@ -377,6 +378,8 @@ const InquiryReservation = () => {
           mt: 2,
         }}
       >
+        <InquirySteps activeStep={1} />
+
         <Typography
           variant="h4"
           gutterBottom

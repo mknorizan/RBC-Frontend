@@ -10,6 +10,7 @@ import {
   Button,
 } from "@mui/material";
 import Header from "../components/layout/Header";
+import InquirySteps from "../components/layout/InquirySteps";
 
 interface SearchParams {
   jettyPoint: string;
@@ -100,6 +101,8 @@ const InquiryOptions = () => {
           mt: 2,
         }}
       >
+        <InquirySteps activeStep={2} />
+
         <Typography
           variant="h4"
           gutterBottom
