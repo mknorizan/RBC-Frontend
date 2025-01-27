@@ -46,7 +46,7 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
 
   return (
     <AppBar
-      position="relative"
+      position="sticky"
       sx={{
         bgcolor: "background.paper",
         boxShadow: trigger ? 1 : 0,
@@ -58,6 +58,8 @@ const Header = ({ hideSearch = false }: HeaderProps) => {
           : trigger
           ? "140px"
           : "180px", // Height with search bar
+        zIndex: 1100,
+        top: 0,
       }}
     >
       {/* Top Row */}
