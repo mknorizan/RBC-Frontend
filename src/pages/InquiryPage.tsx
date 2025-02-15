@@ -1,51 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Container,
-  Paper,
-  Typography,
   Box,
-  Stepper,
-  Step,
-  StepLabel,
-  Grid,
+  Typography,
+  Paper,
   TextField,
-  Select,
-  MenuItem,
+  Grid,
+  Container,
+  Button,
   FormControl,
   InputLabel,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Checkbox,
+  Select,
+  MenuItem,
+  FormGroup,
   FormControlLabel,
-  Button,
+  Checkbox,
+  Stack,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
   FormHelperText,
-  Popover,
-  IconButton,
-  CircularProgress,
-  Skeleton,
-  Alert,
 } from "@mui/material";
-import CircleIcon from "@mui/icons-material/Circle";
-import axiosInstance from "../config/axios";
-import Header from "../components/layout/Header";
-import AddIcon from "@mui/icons-material/Add";
-import RemoveIcon from "@mui/icons-material/Remove";
-import PersonIcon from "@mui/icons-material/Person";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PaidIcon from "@mui/icons-material/Paid";
+import DirectionsBoatIcon from "@mui/icons-material/DirectionsBoat";
+import { useLocation, useNavigate } from "react-router-dom";
+import JettyPointDropdown from "../components/JettyPointDropdown";
+import BookingDatePicker from "../components/BookingDatePicker";
+import PassengerCounter from "../components/PassengerCounter";
+import AddOnSelection from "../components/AddOnSelection";
+import PackageDropdown from "../components/PackageDropdown";
+import AlternativeDatePicker from "../components/AlternativeDatePicker";
 import dayjs from "dayjs";
-import { CheckCircleOutline, Home, Print } from "@mui/icons-material";
-
-interface SearchParams {
-  jettyPoint: string;
-  bookingDate: string;
-  passengers: number;
-}
+import ReservationDatePicker from "../components/ReservationDatePicker";
+import ReservationJettyPoint from "../components/ReservationJettyPoint";
+import ReservationPassengers from "../components/ReservationPassengers";
+import { BOOKING_SELECTION_KEY, BookingSelection } from "../types/booking";
+// import Description from "../components/Description";
+import { Helmet } from 'react-helmet-async';
 
 interface CustomerInfo {
   firstName: string;
@@ -60,119 +55,119 @@ interface CustomerInfo {
 }
 
 interface ReservationDetails {
-  jettyLocation: string;
+  jettyPoint: string;
   bookingDate: string;
-  numberOfPassengers: number;
-  packageType: string;
+  passengers: number;
+  packageId: string;
   addOns: string[];
-}
-
-interface AddOn {
-  id: string;
-  name: string;
-  price: number;
 }
 
 interface OtherOptions {
   alternativeDate1: string;
   alternativeDate2: string;
-  remarks: string;
+  specialRemarks: string;
 }
 
-interface BookingConfirmation {
-  bookingId: string;
-  status: string;
-  message: string;
-  customer: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber: string;
-    addressLine1: string;
-    addressLine2?: string;
-    postalCode: string;
-    city: string;
-    country: string;
-  };
-  reservation: {
-    jettyLocation: string;
-    numberOfPassengers: number;
-    bookingDate: string;
-    packageType: string;
-    packageDetails: {
-      id: number;
-      name: string;
-      description: string;
-      type: string;
-      duration: string;
-    } | null;
-    addOns: string[];
-  };
-  otherOptions: {
-    alternativeDate1?: string;
-    alternativeDate2?: string;
-    remarks?: string;
-  };
+interface ValidationErrors {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  addressLine1: string;
+  postalCode: string;
+  city: string;
+  country: string;
 }
 
-interface PackageOption {
+interface ClearSections {
+  customerInfo: boolean;
+  reservationDetails: boolean;
+  otherOptions: boolean;
+}
+
+interface ReservationValidationErrors {
   packageId: string;
-  title: string;
-  packageType: string;
-  description: string;
-  duration: string;
-  capacity: number;
-  adultPrice?: number;
-  kidPrice?: number;
-  privateBoatPrice?: number;
-  services: string[];
 }
 
-interface PackageServices {
-  services: string[];
-  techniques?: string[]; // For fishing packages
-  distance?: string; // For fishing packages
+interface AddOn {
+  id: number;
+  name: string;
+  // description: string | null;
+  price: number;
+  isActive: boolean;
 }
 
-const steps = [
-  "Customer Info",
-  "Reservation Details",
-  "Other Option",
-  "Confirmation",
-];
+interface IncludedService {
+  name: string;
+  id: number;
+  serviceName: string;
+  // description: string | null;
+}
 
-const packageTypes = [
-  "Day Trip Package 1",
-  "Day Trip Package 2",
-  "Day Trip Package 3",
-];
+interface PriceTier {
+  id: number;
+  ageMin: number | null;
+  ageMax: number | null;
+  price: number;
+  type: string;
+  label: string | null;
+}
 
-const addOns: AddOn[] = [
-  { id: "lifejacket", name: "Life jacket & Safety equipments", price: 10 },
-  { id: "snorkeling", name: "Snorkeling in water garden", price: 10 },
-  { id: "boattour", name: "Boat tour around Pulau Kapas", price: 25 },
-  { id: "lunch", name: "Lunch Set", price: 10 },
-  { id: "guide", name: "Tourist Guide", price: 10 },
-];
+interface Package {
+  id: number;
+  name: string;
+  // description: string;
+  basePrice: number;
+  maxCapacity: number;
+  duration: number;
+  distanceMinKm: number | null;
+  distanceMaxKm: number | null;
+  durationMinutes: number | null;
+  isActive: boolean;
+  categoryId: number;
+  includedServices: IncludedService[];
+  priceTiers: PriceTier[];
+  services: IncludedService[];
+}
 
-const packageInfo = [
-  "Return Trip",
-  "Free Activity",
-  "Life jacket and snorkeling",
-  "Safety Equipment",
-];
+interface StorageData {
+  customerInfo: CustomerInfo;
+  activeSection: number;
+  reservationDetails: ReservationDetails;
+  otherOptions: OtherOptions;
+  bookingId?: string;
+}
 
-const jettyLocations = ["Rhumuda", "Kuala Terengganu"];
+const STORAGE_KEY = "rhumuda_inquiry_form";
 
-const InquiryPage = () => {
+const saveToLocalStorage = (data: StorageData) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+};
+
+const loadFromLocalStorage = () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved ? JSON.parse(saved) : null;
+};
+
+const generateBookingId = () => {
+  const timestamp = new Date().getTime();
+  const random = Math.floor(Math.random() * 1000);
+  return `RHM${timestamp}${random}`;
+};
+
+const InquiryPage: React.FC = () => {
   const location = useLocation();
-  const searchParams = location.state as SearchParams;
   const navigate = useNavigate();
+  const searchValues = location.state || {
+    jettyPoint: "",
+    bookingDate: dayjs().add(1, "day").format("YYYY-MM-DD"),
+    passengers: 1,
+  };
 
-  console.log("Received search params:", searchParams);
-
-  const [activeStep, setActiveStep] = useState(0);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+  const [activeSection, setActiveSection] = React.useState<number>(
+    (location.state as any)?.activeSection ?? 0
+  );
+  const [customerInfo, setCustomerInfo] = React.useState<CustomerInfo>({
     firstName: "",
     lastName: "",
     phoneNumber: "",
@@ -185,230 +180,315 @@ const InquiryPage = () => {
   });
 
   const [reservationDetails, setReservationDetails] =
-    useState<ReservationDetails>({
-      jettyLocation: "",
-      bookingDate: "",
-      numberOfPassengers: 1,
-      packageType: "",
+    React.useState<ReservationDetails>({
+      jettyPoint: searchValues.jettyPoint,
+      bookingDate: searchValues.bookingDate,
+      passengers: searchValues.passengers,
+      packageId: "",
       addOns: [],
     });
 
-  const [otherOptions, setOtherOptions] = useState<OtherOptions>({
+  const [otherOptions, setOtherOptions] = React.useState<OtherOptions>({
     alternativeDate1: "",
     alternativeDate2: "",
-    remarks: "",
+    specialRemarks: "",
   });
 
-  const [bookingConfirmation, setBookingConfirmation] =
-    useState<BookingConfirmation | null>(null);
+  const [errors, setErrors] = React.useState<ValidationErrors>({
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    email: "",
+    addressLine1: "",
+    postalCode: "",
+    city: "",
+    country: "",
+  });
 
-  const [packages, setPackages] = useState<PackageOption[]>([]);
+  const [reservationValidationErrors, setReservationValidationErrors] =
+    useState<ReservationValidationErrors>({
+      packageId: "",
+    });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const [sectionsToDelete, setSectionsToDelete] = useState<ClearSections>({
+    customerInfo: false,
+    reservationDetails: false,
+    otherOptions: false,
+  });
 
-  const [touchedFields, setTouchedFields] = useState<{
-    [key: string]: boolean;
-  }>({});
-
-  const [passengerAnchorEl, setPassengerAnchorEl] =
-    useState<null | HTMLElement>(null);
-  const [dateAnchorEl, setDateAnchorEl] = useState<null | HTMLElement>(null);
-
-  const [selectedPackage, setSelectedPackage] = useState<PackageOption | null>(
-    null
-  );
-
-  const [alternativeDate1AnchorEl, setAlternativeDate1AnchorEl] =
-    useState<null | HTMLElement>(null);
-  const [alternativeDate2AnchorEl, setAlternativeDate2AnchorEl] =
-    useState<null | HTMLElement>(null);
-
-  const [showThankYou, setShowThankYou] = useState(false);
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const [addOnsError, setAddOnsError] = useState<string | null>(null);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number>(1); // Default to boat charter
 
   useEffect(() => {
-    if (location.state) {
-      const params = location.state as SearchParams;
-      console.log("Setting reservation details with:", params);
-
-      const matchedLocation = jettyLocations.find(
-        (loc) =>
-          loc.toLowerCase() ===
-          params.jettyPoint.toLowerCase().replace(/-/g, " ")
-      );
-
-      let formattedDate = "";
-      if (params.bookingDate) {
-        const [day, month, year] = params.bookingDate.split("/");
-        formattedDate = `${year}-${month}-${day}`;
-      }
-
-      if (matchedLocation) {
-        setReservationDetails((prev) => ({
-          ...prev,
-          jettyLocation: matchedLocation,
-          bookingDate: formattedDate,
-          numberOfPassengers: Number(params.passengers) || 0,
-        }));
-      } else {
-        console.error(
-          "Received jetty location does not match available options:",
-          {
-            received: params.jettyPoint,
-            available: jettyLocations,
-          }
-        );
-      }
-
-      console.log("Formatted date:", {
-        original: params.bookingDate,
-        formatted: formattedDate,
-      });
-    }
-  }, [location.state]);
-
-  const handlePassengerClick = (event: React.MouseEvent<HTMLElement>) => {
-    setPassengerAnchorEl(event.currentTarget);
-  };
-
-  const handlePassengerClose = () => {
-    setPassengerAnchorEl(null);
-  };
-
-  const handlePassengerChange = (change: number) => {
-    const newValue = reservationDetails.numberOfPassengers + change;
-    if (newValue >= 0 && newValue <= 20) {
-      setReservationDetails((prev) => ({
-        ...prev,
-        numberOfPassengers: newValue,
-      }));
-    }
-  };
-
-  const handleDateClick = (event: React.MouseEvent<HTMLElement>) => {
-    setDateAnchorEl(event.currentTarget);
-  };
-
-  const handleDateClose = () => {
-    setDateAnchorEl(null);
-  };
-
-  const handleDateChange = (date: dayjs.Dayjs | null) => {
-    if (date) {
-      setReservationDetails((prev) => ({
-        ...prev,
-        bookingDate: date.format("YYYY-MM-DD"),
-      }));
-      handleDateClose();
-    }
-  };
-
-  const handleAlternativeDateClick =
-    (dateType: "alternativeDate1" | "alternativeDate2") =>
-    (event: React.MouseEvent<HTMLElement>) => {
-      if (dateType === "alternativeDate1") {
-        setAlternativeDate1AnchorEl(event.currentTarget);
-      } else {
-        setAlternativeDate2AnchorEl(event.currentTarget);
+    const fetchAddOns = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/addons");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setAddOns(data);
+      } catch (error) {
+        console.error("Error fetching add-ons:", error);
+        setAddOnsError("Failed to load add-ons");
       }
     };
 
-  const handleAlternativeDateClose =
-    (dateType: "alternativeDate1" | "alternativeDate2") => () => {
-      if (dateType === "alternativeDate1") {
-        setAlternativeDate1AnchorEl(null);
-      } else {
-        setAlternativeDate2AnchorEl(null);
-      }
-    };
-
-  const handleAlternativeDateChange =
-    (dateType: "alternativeDate1" | "alternativeDate2") =>
-    (date: dayjs.Dayjs | null) => {
-      if (date && dayjs.isDayjs(date)) {
-        setOtherOptions((prev) => ({
-          ...prev,
-          [dateType]: date.format("YYYY-MM-DD"),
-        }));
-        handleAlternativeDateClose(dateType)();
-      }
-    };
+    fetchAddOns();
+  }, []);
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        console.log("Fetching packages...");
-        const response = await axiosInstance.get("/api/packages");
-        console.log("Raw packages response:", response.data);
-
-        if (!response.data || !Array.isArray(response.data)) {
-          console.error("Invalid packages data format:", response.data);
-          setError("Failed to load packages: Invalid data format");
-          return;
-        }
-
-        setPackages(response.data);
-      } catch (err) {
-        console.error("Error fetching packages:", err);
-        setError(err?.response?.data?.message || "Failed to load packages");
+        const response = await fetch(
+          `http://localhost:8080/api/packages/category/${selectedCategory}`
+        );
+        const data = await response.json();
+        console.log("Raw Package Data:", data);
+        setPackages(data);
+      } catch (error) {
+        console.error("Error fetching packages:", error);
       }
     };
 
-    fetchPackages();
+    if (selectedCategory) {
+      fetchPackages();
+    }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    const savedData = loadFromLocalStorage();
+    if (savedData) {
+      setCustomerInfo(savedData.customerInfo);
+      setActiveSection(savedData.activeSection);
+      setReservationDetails(savedData.reservationDetails);
+      setOtherOptions(savedData.otherOptions);
+    } else {
+      // Initialize with search values and save to localStorage immediately
+      const initialReservationDetails = {
+        jettyPoint: searchValues.jettyPoint || "",
+        bookingDate: searchValues.bookingDate || "",
+        passengers: searchValues.passengers || 1,
+        packageId: "",
+        addOns: [],
+      };
+      setReservationDetails(initialReservationDetails);
+
+      // Save initial state to localStorage
+      saveToLocalStorage({
+        customerInfo: {
+          firstName: "",
+          lastName: "",
+          phoneNumber: "",
+          email: "",
+          addressLine1: "",
+          addressLine2: "",
+          postalCode: "",
+          city: "",
+          country: "",
+        },
+        activeSection: 0,
+        reservationDetails: initialReservationDetails,
+        otherOptions: {
+          alternativeDate1: "",
+          alternativeDate2: "",
+          specialRemarks: "",
+        },
+      });
+    }
   }, []);
 
-  const handleInputChange =
+  useEffect(() => {
+    // Try router state first
+    const routerSelection = location.state as BookingSelection;
+
+    if (routerSelection?.categoryId && routerSelection?.packageId) {
+      setSelectedCategory(routerSelection.categoryId);
+      setReservationDetails((prev) => ({
+        ...prev,
+        packageId: routerSelection.packageId,
+      }));
+      return;
+    }
+
+    // Fallback to localStorage
+    const storedSelection = localStorage.getItem(BOOKING_SELECTION_KEY);
+    if (storedSelection) {
+      const selection: BookingSelection = JSON.parse(storedSelection);
+
+      // Check if data is not stale (24 hours)
+      if (Date.now() - selection.timestamp < 24 * 60 * 60 * 1000) {
+        setSelectedCategory(selection.categoryId);
+        setReservationDetails((prev) => ({
+          ...prev,
+          packageId: selection.packageId,
+        }));
+      } else {
+        localStorage.removeItem(BOOKING_SELECTION_KEY);
+      }
+    }
+  }, []);
+
+  const validateName = (name: string): string => {
+    if (!name) return "This field is required";
+    if (name.length < 2) return "Must be at least 2 characters";
+    if (!/^[a-zA-Z\s]*$/.test(name)) return "Only letters and spaces allowed";
+    return "";
+  };
+
+  const validatePhoneNumber = (phone: string): string => {
+    if (!phone) return "This field is required";
+
+    // Remove any potential spaces
+    const cleanPhone = phone.replace(/\s/g, "");
+
+    // Check for valid formats: +601234567890 or 01234567890
+    const phoneRegex = /^(\+?60|0)\d{9,10}$/;
+
+    if (!phoneRegex.test(cleanPhone)) {
+      return "Invalid format. Use +601234567890 or 01234567890";
+    }
+
+    return "";
+  };
+
+  const validateEmail = (email: string): string => {
+    if (!email) return "This field is required";
+
+    // RFC 5322 standard email regex
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!emailRegex.test(email)) {
+      return "Invalid email address";
+    }
+
+    return "";
+  };
+
+  const validateAddressLine1 = (address: string): string => {
+    if (!address) return "This field is required";
+    if (address.length < 5) return "Address must be at least 5 characters long";
+    return "";
+  };
+
+  const validatePostalCode = (postalCode: string): string => {
+    if (!postalCode) return "This field is required";
+
+    // Check for exactly 5 digits
+    const postalCodeRegex = /^\d{5}$/;
+
+    if (!postalCodeRegex.test(postalCode)) {
+      return "Invalid format. Must be 5 digits (e.g., 12345)";
+    }
+
+    return "";
+  };
+
+  const validateCity = (city: string): string => {
+    if (!city) return "This field is required";
+    if (city.length < 2) return "Must be at least 2 characters";
+    if (!/^[a-zA-Z\s]*$/.test(city)) return "Only letters and spaces allowed";
+    return "";
+  };
+
+  const validateCountry = (country: string): string => {
+    if (!country) return "This field is required";
+    if (country.length < 2) return "Must be at least 2 characters";
+    if (!/^[a-zA-Z\s]*$/.test(country))
+      return "Only letters and spaces allowed";
+    return "";
+  };
+
+  const handleCustomerInfoChange =
     (field: keyof CustomerInfo) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      setCustomerInfo((prev) => ({
+      const value = event.target.value;
+      setCustomerInfo((prev) => {
+        const newInfo = {
+          ...prev,
+          [field]: value,
+        };
+        // Auto-save to localStorage
+        saveToLocalStorage({
+          customerInfo: newInfo,
+          activeSection,
+          reservationDetails,
+          otherOptions,
+        });
+        return newInfo;
+      });
+
+      switch (field) {
+        case "firstName":
+        case "lastName":
+          setErrors((prev) => ({
+            ...prev,
+            [field]: validateName(value),
+          }));
+          break;
+        case "phoneNumber":
+          setErrors((prev) => ({
+            ...prev,
+            phoneNumber: validatePhoneNumber(value),
+          }));
+          break;
+        case "email":
+          setErrors((prev) => ({
+            ...prev,
+            email: validateEmail(value),
+          }));
+          break;
+        case "addressLine1":
+          setErrors((prev) => ({
+            ...prev,
+            addressLine1: validateAddressLine1(value),
+          }));
+          break;
+        case "postalCode":
+          setErrors((prev) => ({
+            ...prev,
+            postalCode: validatePostalCode(value),
+          }));
+          break;
+        case "city":
+          setErrors((prev) => ({
+            ...prev,
+            city: validateCity(value),
+          }));
+          break;
+        case "country":
+          setErrors((prev) => ({
+            ...prev,
+            country: validateCountry(value),
+          }));
+          break;
+      }
+    };
+
+  const handleReservationDetailsChange =
+    (field: keyof ReservationDetails) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setReservationDetails((prev) => ({
         ...prev,
         [field]: event.target.value,
       }));
-      setTouchedFields((prev) => ({
-        ...prev,
-        [field]: true,
-      }));
     };
 
-  const handleReservationChange =
-    (field: keyof ReservationDetails) =>
-    (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
-      const value = event.target.value;
-      setReservationDetails((prev) => ({
+  const handleAddOnChange = (addOnId: string) => {
+    setReservationDetails((prev) => {
+      const currentAddOns = prev.addOns || [];
+      const newAddOns = currentAddOns.includes(addOnId)
+        ? currentAddOns.filter((id) => id !== addOnId)
+        : [...currentAddOns, addOnId];
+
+      return {
         ...prev,
-        [field]: value,
-      }));
-      setTouchedFields((prev) => ({
-        ...prev,
-        [field]: true,
-      }));
-    };
-
-  const handleAddOnToggle = (addOnId: string) => {
-    setReservationDetails((prev) => ({
-      ...prev,
-      addOns: prev.addOns.includes(addOnId)
-        ? prev.addOns.filter((id) => id !== addOnId)
-        : [...prev.addOns, addOnId],
-    }));
-  };
-
-  const handleNext = () => {
-    if (activeStep === 0 && !validateCustomerInfo()) {
-      return;
-    }
-    if (activeStep === 1 && !validateReservationDetails()) {
-      return;
-    }
-    if (activeStep === steps.length - 2) {
-      handleSubmit();
-      return;
-    }
-    setActiveStep((prevStep) => prevStep + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
+        addOns: newAddOns,
+      };
+    });
   };
 
   const handleOtherOptionsChange =
@@ -420,1542 +500,783 @@ const InquiryPage = () => {
       }));
     };
 
-  const handleSubmit = async () => {
+  const handleDateChange = (field: keyof OtherOptions) => (value: string) => {
+    setOtherOptions((prev) => {
+      const newOptions = {
+        ...prev,
+        [field]: value,
+      };
+      saveToLocalStorage({
+        customerInfo,
+        activeSection,
+        reservationDetails,
+        otherOptions: newOptions,
+      });
+      return newOptions;
+    });
+  };
+
+  const handleNext = async () => {
+    if (activeSection === 0) {
+      const firstNameError = validateName(customerInfo.firstName);
+      const lastNameError = validateName(customerInfo.lastName);
+      const phoneNumberError = validatePhoneNumber(customerInfo.phoneNumber);
+      const emailError = validateEmail(customerInfo.email);
+      const addressLine1Error = validateAddressLine1(customerInfo.addressLine1);
+      const postalCodeError = validatePostalCode(customerInfo.postalCode);
+      const cityError = validateCity(customerInfo.city);
+      const countryError = validateCountry(customerInfo.country);
+
+      setErrors({
+        firstName: firstNameError,
+        lastName: lastNameError,
+        phoneNumber: phoneNumberError,
+        email: emailError,
+        addressLine1: addressLine1Error,
+        postalCode: postalCodeError,
+        city: cityError,
+        country: countryError,
+      });
+
+      if (
+        firstNameError ||
+        lastNameError ||
+        phoneNumberError ||
+        emailError ||
+        addressLine1Error ||
+        postalCodeError ||
+        cityError ||
+        countryError
+      ) {
+        return;
+      }
+
+      // Save to localStorage before proceeding
+      saveToLocalStorage({
+        customerInfo,
+        activeSection: activeSection + 1,
+        reservationDetails,
+        otherOptions,
+      });
+    }
+
+    if (activeSection === 1) {
+      // Validate reservation details
+      let hasErrors = false;
+      const newErrors = { packageId: "" };
+
+      if (!reservationDetails.packageId) {
+        newErrors.packageId = "Please select a package";
+        hasErrors = true;
+      }
+
+      setReservationValidationErrors(newErrors);
+
+      if (hasErrors) {
+        return;
+      }
+
+      // Save to localStorage before proceeding
+      saveToLocalStorage({
+        customerInfo,
+        activeSection: activeSection + 1,
+        reservationDetails,
+        otherOptions,
+      });
+    }
+
+    if (activeSection === 2) {
+      try {
+        const bookingId = await saveBooking();
+        // Clear form data but keep bookingId
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ bookingId }));
+        // Navigate to summary page with the booking ID
+        navigate(`/summary/${bookingId}`);
+      } catch (error) {
+        // Handle error (you might want to show an error message to the user)
+        console.error("Failed to save booking:", error);
+        return;
+      }
+    } else {
+      setActiveSection((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    setActiveSection((prev) => prev - 1);
+  };
+
+  const handleClearClick = () => {
+    setClearDialogOpen(true);
+  };
+
+  const handleClearConfirm = () => {
+    if (sectionsToDelete.customerInfo) {
+      setCustomerInfo({
+        firstName: "",
+        lastName: "",
+        phoneNumber: "",
+        email: "",
+        addressLine1: "",
+        addressLine2: "",
+        postalCode: "",
+        city: "",
+        country: "",
+      });
+      // Clear localStorage if customer info is being cleared
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    if (sectionsToDelete.reservationDetails) {
+      setReservationDetails({
+        jettyPoint: "",
+        bookingDate: "",
+        passengers: 1,
+        packageId: "",
+        addOns: [],
+      });
+    }
+
+    if (sectionsToDelete.otherOptions) {
+      setOtherOptions({
+        alternativeDate1: "",
+        alternativeDate2: "",
+        specialRemarks: "",
+      });
+    }
+
+    // If all sections are being cleared, remove from localStorage
+    if (
+      sectionsToDelete.customerInfo &&
+      sectionsToDelete.reservationDetails &&
+      sectionsToDelete.otherOptions
+    ) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    setClearDialogOpen(false);
+    setSectionsToDelete({
+      customerInfo: false,
+      reservationDetails: false,
+      otherOptions: false,
+    });
+  };
+
+  const handleSectionChange =
+    (section: keyof ClearSections) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSectionsToDelete((prev) => ({
+        ...prev,
+        [section]: event.target.checked,
+      }));
+    };
+
+  const handleSelectAllSections = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newValue = event.target.checked;
+    setSectionsToDelete({
+      customerInfo: newValue,
+      reservationDetails: newValue,
+      otherOptions: newValue,
+    });
+  };
+
+  const saveBooking = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
+      const bookingId = generateBookingId();
 
       const bookingData = {
-        packageId: selectedPackage?.id.toString(),
-        packageType: selectedPackage?.type || "",
+        bookingId: bookingId,
+        status: "INCOMPLETE", // Initial status when creating booking
+        firstName: customerInfo.firstName,
+        lastName: customerInfo.lastName,
+        phoneNumber: customerInfo.phoneNumber,
+        email: customerInfo.email,
+        addressLine1: customerInfo.addressLine1,
+        addressLine2: customerInfo.addressLine2,
+        postalCode: customerInfo.postalCode,
+        city: customerInfo.city,
+        country: customerInfo.country,
+        jettyPoint: reservationDetails.jettyPoint,
+        packageId: reservationDetails.packageId,
         bookingDate: dayjs(reservationDetails.bookingDate).format("YYYY-MM-DD"),
-        numberOfPassengers: reservationDetails.numberOfPassengers,
-        jettyLocation: reservationDetails.jettyLocation,
-        customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-        customerEmail: customerInfo.email,
-        customerPhone: customerInfo.phoneNumber,
-        specialRequests: otherOptions.remarks || "",
-        addOns: Array.from(new Set(reservationDetails.addOns || [])),
-        alternativeDate1: otherOptions.alternativeDate1
-          ? dayjs(otherOptions.alternativeDate1).format("YYYY-MM-DD")
-          : null,
-        alternativeDate2: otherOptions.alternativeDate2
-          ? dayjs(otherOptions.alternativeDate2).format("YYYY-MM-DD")
-          : null,
-        customerAddress: {
-          addressLine1: customerInfo.addressLine1 || "",
-          addressLine2: customerInfo.addressLine2 || "",
-          postalCode: customerInfo.postalCode || "",
-          city: customerInfo.city || "",
-          country: customerInfo.country || "",
-        },
+        passengers: reservationDetails.passengers,
+        addOns: reservationDetails.addOns,
+        alternativeDate1: otherOptions.alternativeDate1 ? dayjs(otherOptions.alternativeDate1).format("YYYY-MM-DD") : null,
+        alternativeDate2: otherOptions.alternativeDate2 ? dayjs(otherOptions.alternativeDate2).format("YYYY-MM-DD") : null,
+        specialRemarks: otherOptions.specialRemarks || null,
       };
 
-      console.log("Submitting booking data:", bookingData);
-      const response = await axiosInstance.post("/api/bookings", bookingData);
-      console.log("Booking response:", response.data);
+      console.log("Sending booking data:", bookingData);
 
-      if (response.data && response.data.bookingId) {
-        setBookingConfirmation(response.data);
-        setActiveStep(steps.length);
-        setShowThankYou(true);
-        console.log("Setting booking confirmation:", response.data);
-      } else {
-        throw new Error("Invalid response from server");
-      }
-    } catch (err: any) {
-      console.error("Detailed error:", {
-        message: err.message,
-        response: err.response?.data,
-        data: err.response?.data?.details || err.response?.data?.error,
+      const response = await fetch("http://localhost:8080/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bookingData),
       });
-      setError(err.response?.data?.message || "Failed to submit booking");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const validateCustomerInfo = () => {
-    const requiredFields: (keyof CustomerInfo)[] = [
-      "firstName",
-      "lastName",
-      "phoneNumber",
-      "email",
-      "addressLine1",
-      "postalCode",
-      "city",
-      "country",
-    ];
+      const responseData = await response.json();
+      console.log("Server response:", responseData);
 
-    // Mark all fields as touched when validating
-    const newTouchedFields = requiredFields.reduce(
-      (acc, field) => ({
-        ...acc,
-        [field]: true,
-      }),
-      {}
-    );
-
-    setTouchedFields(newTouchedFields);
-
-    return requiredFields.every((field) => customerInfo[field]);
-  };
-
-  const validateReservationDetails = () => {
-    const requiredFields: (keyof ReservationDetails)[] = [
-      "jettyLocation",
-      "bookingDate",
-      "numberOfPassengers",
-      "packageType",
-    ];
-
-    const newTouchedFields = requiredFields.reduce(
-      (acc, field) => ({
-        ...acc,
-        [field]: true,
-      }),
-      {}
-    );
-
-    setTouchedFields(newTouchedFields);
-
-    return requiredFields.every((field) => reservationDetails[field]);
-  };
-
-  const shouldShowError = (field: string) => {
-    return touchedFields[field] && !customerInfo[field];
-  };
-
-  const textFieldSx = (field: string) => ({
-    bgcolor: "white",
-    borderRadius: 1,
-    "& .MuiOutlinedInput-root": {
-      "& fieldset": {
-        borderColor: shouldShowError(field) ? "error.main" : "#e0e0e0",
-      },
-      "&:hover fieldset": {
-        borderColor: shouldShowError(field) ? "error.light" : "#bdbdbd",
-      },
-    },
-    "& .MuiFormLabel-root": {
-      color: shouldShowError(field) ? "error.main" : "inherit",
-    },
-  });
-
-  const shouldShowReservationError = (field: keyof ReservationDetails) => {
-    return touchedFields[field] && !reservationDetails[field];
-  };
-
-  const getPackageServices = (packageId: string): string[] => {
-    // If packages haven't loaded yet, return empty array
-    if (!packages || packages.length === 0) {
-      return [];
-    }
-
-    const selectedPackage = packages.find((pkg) => pkg.packageId === packageId);
-
-    if (!selectedPackage || !selectedPackage.services) {
-      return [];
-    }
-
-    const services = [...selectedPackage.services];
-
-    // Add fishing-specific info if available
-    if ("techniques" in selectedPackage && selectedPackage.techniques) {
-      if (selectedPackage.distance) {
-        services.push(`Distance: ${selectedPackage.distance}`);
+      if (!response.ok) {
+        throw new Error(
+          responseData.message ||
+          (responseData.errors && responseData.errors.join(", ")) ||
+          "Failed to save booking"
+        );
       }
-      selectedPackage.techniques.forEach((technique) => {
-        services.push(`Technique: ${technique}`);
-      });
-    }
 
-    return services;
-  };
-
-  const handlePackageSelection = (packageId: string) => {
-    console.log("Selected package ID:", packageId);
-    console.log("Available packages:", packages);
-
-    if (!packageId) {
-      console.error("No package ID provided");
-      return;
-    }
-
-    const selected = packages.find((pkg) => pkg.id === Number(packageId));
-    console.log("Found selected package:", selected);
-
-    if (selected) {
-      setSelectedPackage(selected);
-      setReservationDetails((prev) => ({
-        ...prev,
-        packageType: packageId,
-      }));
-    } else {
-      console.error("Package not found with ID:", packageId);
+      return responseData.bookingId || bookingId;
+    } catch (error) {
+      console.error("Error saving booking:", error);
+      throw error;
     }
   };
 
-  const renderReservationDetails = () => (
-    <Paper
-      elevation={0}
-      sx={{ p: 4, border: "1px solid #e0e0e0", bgcolor: "#f5f5f5" }}
-    >
+  const renderButtons = () => (
+    <Box sx={{ mt: 3, display: "flex", justifyContent: "space-between" }}>
+      <Button
+        variant="outlined"
+        onClick={handleClearClick}
+        sx={{
+          color: "#FF0000",
+          borderColor: "#FF0000",
+          "&:hover": {
+            bgcolor: "rgba(255, 0, 0, 0.04)",
+            borderColor: "#FF0000",
+          },
+        }}
+      >
+        Clear
+      </Button>
+      <Box sx={{ display: "flex", gap: 2 }}>
+        {activeSection > 0 && (
+          <Button
+            variant="outlined"
+            onClick={handlePrevious}
+            sx={{ color: "#0384BD", borderColor: "#0384BD" }}
+          >
+            Previous
+          </Button>
+        )}
+        {activeSection < 2 && (
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            sx={{ bgcolor: "#0384BD", "&:hover": { bgcolor: "#026994" } }}
+          >
+            Next
+          </Button>
+        )}
+        {activeSection === 2 && (
+          <Button
+            variant="contained"
+            onClick={handleNext}
+            sx={{ bgcolor: "#0384BD", "&:hover": { bgcolor: "#026994" } }}
+          >
+            Next
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
+
+  const renderCustomerInfo = () => (
+    <Paper elevation={0} sx={{ p: 4, border: "1px solid #e0e0e0" }}>
+      <Typography variant="h6" sx={{ mb: 3 }}>
+        Customer Information
+      </Typography>
+
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
-          <FormControl
+          <TextField
             fullWidth
-            error={shouldShowReservationError("jettyLocation")}
-            sx={{
-              bgcolor: "white",
-              borderRadius: 1,
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: shouldShowReservationError("jettyLocation")
-                    ? "error.main"
-                    : "#e0e0e0",
-                },
-              },
+            label="First Name"
+            value={customerInfo.firstName}
+            onChange={handleCustomerInfoChange("firstName")}
+            error={!!errors.firstName}
+            helperText={errors.firstName}
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                firstName: validateName(customerInfo.firstName),
+              }));
             }}
-          >
-            <InputLabel required>Jetty Location</InputLabel>
-            <Select
-              value={reservationDetails.jettyLocation}
-              onChange={handleReservationChange("jettyLocation")}
-              label="Jetty Location"
-              onBlur={() =>
-                setTouchedFields((prev) => ({ ...prev, jettyLocation: true }))
-              }
-            >
-              {jettyLocations.map((location) => (
-                <MenuItem key={`jetty-${location}`} value={location}>
-                  {location}
-                </MenuItem>
-              ))}
-            </Select>
-            {shouldShowReservationError("jettyLocation") && (
-              <FormHelperText>Jetty location is required</FormHelperText>
-            )}
-          </FormControl>
+          />
         </Grid>
         <Grid item xs={12} sm={6}>
-          <FormControl
+          <TextField
             fullWidth
-            error={shouldShowReservationError("numberOfPassengers")}
-            sx={{
-              bgcolor: "white",
-              borderRadius: 1,
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: shouldShowReservationError("numberOfPassengers")
-                    ? "error.main"
-                    : "#e0e0e0",
-                },
-              },
+            label="Last Name"
+            value={customerInfo.lastName}
+            onChange={handleCustomerInfoChange("lastName")}
+            error={!!errors.lastName}
+            helperText={errors.lastName}
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                lastName: validateName(customerInfo.lastName),
+              }));
             }}
-          >
-            <TextField
-              required
-              fullWidth
-              label="Passengers"
-              value={`${reservationDetails.numberOfPassengers} Passenger(s)`}
-              onClick={handlePassengerClick}
-              InputProps={{
-                readOnly: true,
-                startAdornment: (
-                  <PersonIcon sx={{ mr: 1, color: "action.active" }} />
-                ),
-              }}
-              error={shouldShowReservationError("numberOfPassengers")}
-              helperText={
-                shouldShowReservationError("numberOfPassengers")
-                  ? "Number of passengers is required"
-                  : ""
-              }
-            />
-          </FormControl>
-          <Popover
-            open={Boolean(passengerAnchorEl)}
-            anchorEl={passengerAnchorEl}
-            onClose={handlePassengerClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "left",
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Phone Number"
+            value={customerInfo.phoneNumber}
+            onChange={handleCustomerInfoChange("phoneNumber")}
+            error={!!errors.phoneNumber}
+            helperText={errors.phoneNumber}
+            placeholder="+601234567890"
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                phoneNumber: validatePhoneNumber(customerInfo.phoneNumber),
+              }));
             }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "left",
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Email Address"
+            value={customerInfo.email}
+            onChange={handleCustomerInfoChange("email")}
+            error={!!errors.email}
+            helperText={errors.email}
+            placeholder="example@email.com"
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                email: validateEmail(customerInfo.email),
+              }));
             }}
-            PaperProps={{
-              sx: {
-                p: 2,
-                width: "300px",
-              },
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Group Size
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                mb: 2,
-              }}
-            >
-              <IconButton
-                onClick={() => handlePassengerChange(-1)}
-                disabled={reservationDetails.numberOfPassengers <= 0}
-              >
-                <RemoveIcon />
-              </IconButton>
-              <Typography variant="h6">
-                {reservationDetails.numberOfPassengers}
-              </Typography>
-              <IconButton
-                onClick={() => handlePassengerChange(1)}
-                disabled={reservationDetails.numberOfPassengers >= 20}
-              >
-                <AddIcon />
-              </IconButton>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Maximum 20 passengers allowed
-            </Typography>
-          </Popover>
+          />
         </Grid>
         <Grid item xs={12}>
-          <FormControl
+          <TextField
             fullWidth
-            error={shouldShowReservationError("bookingDate")}
-            sx={{
-              bgcolor: "white",
-              borderRadius: 1,
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: shouldShowReservationError("bookingDate")
-                    ? "error.main"
-                    : "#e0e0e0",
-                },
-              },
+            label="Address Line 1"
+            value={customerInfo.addressLine1}
+            onChange={handleCustomerInfoChange("addressLine1")}
+            error={!!errors.addressLine1}
+            helperText={errors.addressLine1}
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                addressLine1: validateAddressLine1(customerInfo.addressLine1),
+              }));
             }}
-          >
-            <TextField
-              required
-              fullWidth
-              label="Booking Date"
-              value={reservationDetails.bookingDate || ""}
-              onClick={handleDateClick}
-              InputProps={{
-                readOnly: true,
-                startAdornment: (
-                  <CalendarTodayIcon sx={{ mr: 1, color: "action.active" }} />
-                ),
-              }}
-              error={shouldShowReservationError("bookingDate")}
-              helperText={
-                shouldShowReservationError("bookingDate")
-                  ? "Booking date is required"
-                  : ""
-              }
-            />
-          </FormControl>
-          <Popover
-            open={Boolean(dateAnchorEl)}
-            anchorEl={dateAnchorEl}
-            onClose={handleDateClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "left",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "left",
-            }}
-            PaperProps={{
-              sx: { p: 2 },
-            }}
-          >
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DateCalendar
-                value={
-                  reservationDetails.bookingDate
-                    ? dayjs(reservationDetails.bookingDate)
-                    : null
-                }
-                onChange={handleDateChange}
-                minDate={dayjs()}
-                views={["day"]}
-                sx={{
-                  "& .MuiPickersDay-root.Mui-selected": {
-                    backgroundColor: "#0384BD",
-                    "&:hover": {
-                      backgroundColor: "#026890",
-                    },
-                  },
-                }}
-              />
-            </LocalizationProvider>
-          </Popover>
+          />
         </Grid>
         <Grid item xs={12}>
-          <FormControl
+          <TextField
             fullWidth
-            error={shouldShowReservationError("packageType")}
-            sx={{
-              bgcolor: "white",
-              borderRadius: 1,
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: shouldShowReservationError("packageType")
-                    ? "error.main"
-                    : "#e0e0e0",
-                },
-              },
+            label="Address Line 2"
+            value={customerInfo.addressLine2}
+            onChange={handleCustomerInfoChange("addressLine2")}
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <TextField
+            fullWidth
+            label="Postal Code"
+            value={customerInfo.postalCode}
+            onChange={handleCustomerInfoChange("postalCode")}
+            error={!!errors.postalCode}
+            helperText={errors.postalCode}
+            placeholder="12345"
+            inputProps={{ maxLength: 5 }}
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                postalCode: validatePostalCode(customerInfo.postalCode),
+              }));
             }}
-          >
-            <InputLabel required>Package Type</InputLabel>
-            <Select
-              value={reservationDetails.packageType || ""}
-              label="Package Type"
-              onChange={(e) => handlePackageSelection(e.target.value)}
-              onBlur={() =>
-                setTouchedFields((prev) => ({ ...prev, packageType: true }))
-              }
-            >
-              {isLoading ? (
-                <MenuItem key="loading-state" disabled>
-                  Loading packages...
-                </MenuItem>
-              ) : error ? (
-                <MenuItem key="error-state" disabled>
-                  {error}
-                </MenuItem>
-              ) : packages && packages.length > 0 ? (
-                packages.map((pkg) => (
-                  <MenuItem key={pkg.id} value={pkg.id}>
-                    <Box>
-                      <Typography variant="subtitle1">{pkg.title}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {pkg.description} | Duration: {pkg.duration} | Capacity:{" "}
-                        {pkg.capacity} |{" "}
-                        {pkg.privateBoatPrice
-                          ? `RM${pkg.privateBoatPrice} (Private)`
-                          : pkg.adultPrice
-                          ? `From RM${pkg.adultPrice}`
-                          : "Price varies"}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem key="no-packages-state" disabled>
-                  No packages available
-                </MenuItem>
-              )}
-            </Select>
-            {shouldShowReservationError("packageType") && (
-              <FormHelperText>Package type is required</FormHelperText>
-            )}
-          </FormControl>
+          />
         </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Typography variant="h6" gutterBottom>
-            Add Ons:
-          </Typography>
-          <List>
-            {addOns.map((addon) => (
-              <ListItem key={`addon-${addon.id}`} dense>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={reservationDetails.addOns.includes(addon.id)}
-                      onChange={() => handleAddOnToggle(addon.id)}
-                    />
-                  }
-                  label={`${addon.name} | RM ${addon.price}`}
-                />
-              </ListItem>
-            ))}
-          </List>
+        <Grid item xs={12} sm={4}>
+          <TextField
+            fullWidth
+            label="City"
+            value={customerInfo.city}
+            onChange={handleCustomerInfoChange("city")}
+            error={!!errors.city}
+            helperText={errors.city}
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                city: validateCity(customerInfo.city),
+              }));
+            }}
+          />
         </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Typography variant="h6" gutterBottom>
-            Package Info
-          </Typography>
-          {isLoading ? (
-            <Box sx={{ p: 2 }}>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <CircularProgress size={20} sx={{ mr: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Loading package details...
-                </Typography>
-              </Box>
-              <Skeleton variant="text" width="60%" sx={{ mb: 1 }} />
-              <Skeleton variant="text" width="40%" sx={{ mb: 1 }} />
-              <Skeleton variant="text" width="70%" sx={{ mb: 1 }} />
-              <Skeleton variant="text" width="50%" sx={{ mb: 1 }} />
-            </Box>
-          ) : error ? (
-            <Alert severity="error" sx={{ mt: 1 }}>
-              {error}
-            </Alert>
-          ) : !selectedPackage ? (
-            <Typography color="text.secondary">
-              Please select a package to view details
-            </Typography>
-          ) : (
-            renderPackageDetails(selectedPackage)
-          )}
+        <Grid item xs={12} sm={4}>
+          <TextField
+            fullWidth
+            label="Country"
+            value={customerInfo.country}
+            onChange={handleCustomerInfoChange("country")}
+            error={!!errors.country}
+            helperText={errors.country}
+            onBlur={() => {
+              setErrors((prev) => ({
+                ...prev,
+                country: validateCountry(customerInfo.country),
+              }));
+            }}
+          />
         </Grid>
       </Grid>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-        <Button
-          onClick={handleBack}
-          sx={{
-            bgcolor: "#e0e0e0",
-            color: "black",
-            "&:hover": {
-              bgcolor: "#d0d0d0",
-            },
-          }}
-        >
-          Previous
-        </Button>
-        <Button
-          onClick={handleNext}
-          sx={{
-            bgcolor: "#0384BD",
-            color: "white",
-            "&:hover": {
-              bgcolor: "#026890",
-            },
-          }}
-        >
-          Next
-        </Button>
+      {renderButtons()}
+    </Paper>
+  );
+
+  const renderPackageInfo = () => {
+    const selectedPackage = packages.find(
+      (pkg) => pkg.id.toString() === reservationDetails.packageId
+    );
+
+    if (!selectedPackage) return null;
+
+    return (
+      <Box
+        sx={{
+          mt: 3,
+          p: 3,
+          border: "1px solid #e0e0e0",
+          borderRadius: 2,
+          bgcolor: "#f8f8f8",
+          mb: 3,
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Package Info
+        </Typography>
+
+        <Grid container spacing={3}>
+          {/* Package Name and Description */}
+          {/* <Grid item xs={12}> */}
+          {/* <Typography variant="subtitle1" fontWeight={500}>
+              {selectedPackage.name}
+            </Typography>
+            <Description text={selectedPackage.description} /> */}
+          {/* </Grid> */}
+
+          {/* Duration, Capacity, and Distance */}
+          <Grid item xs={12} sm={6}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <AccessTimeIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Typography variant="body2">
+                  Duration: {selectedPackage.durationMinutes} minutes
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <GroupsIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Typography variant="body2">
+                  Max Capacity: {selectedPackage.maxCapacity} persons
+                </Typography>
+              </Stack>
+              {selectedPackage.distanceMinKm &&
+                selectedPackage.distanceMaxKm && (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <DirectionsBoatIcon
+                      sx={{ color: "#0384BD", fontSize: 20 }}
+                    />
+                    <Typography variant="body2">
+                      Distance: {selectedPackage.distanceMinKm} -{" "}
+                      {selectedPackage.distanceMaxKm} km
+                    </Typography>
+                  </Stack>
+                )}
+            </Stack>
+          </Grid>
+
+          {/* Price Tiers */}
+          <Grid item xs={12} sm={6}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <PaidIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Stack>
+                  {selectedPackage.priceTiers.map((tier) => (
+                    <Typography key={tier.id} variant="body2">
+                      {tier.price === 0 ? "FREE" : `RM${tier.price}`} |{" "}
+                      {tier.type}
+                    </Typography>
+                  ))}
+                </Stack>
+              </Stack>
+            </Stack>
+          </Grid>
+
+          {/* Included Services */}
+          {selectedPackage.services && selectedPackage.services.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Services Included:
+              </Typography>
+              <Stack spacing={0.5}>
+                {selectedPackage.services.map((service) => (
+                  <Typography
+                    key={service.id}
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {service.name || service.serviceName}
+                  </Typography>
+                ))}
+              </Stack>
+            </Grid>
+          )}
+        </Grid>
       </Box>
+    );
+  };
+
+  const renderReservationDetails = () => (
+    <Paper sx={{ p: 3 }}>
+      <Typography variant="h5" sx={{ mb: 3 }}>
+        Reservation Details
+      </Typography>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={4}>
+          <ReservationJettyPoint
+            value={reservationDetails.jettyPoint}
+            onChange={(value) =>
+              setReservationDetails((prev) => ({
+                ...prev,
+                jettyPoint: value,
+              }))
+            }
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <ReservationDatePicker
+            value={reservationDetails.bookingDate}
+            onChange={(value) =>
+              setReservationDetails((prev) => ({
+                ...prev,
+                bookingDate: value,
+              }))
+            }
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <ReservationPassengers
+            value={reservationDetails.passengers}
+            onChange={(value) =>
+              setReservationDetails((prev) => ({
+                ...prev,
+                passengers: value,
+              }))
+            }
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value as number);
+                setReservationDetails((prev) => ({
+                  ...prev,
+                  packageId: "",
+                }));
+              }}
+              label="Category"
+            >
+              <MenuItem value={1}>Boat Charter</MenuItem>
+              <MenuItem value={2}>Day Trip</MenuItem>
+              <MenuItem value={3}>Fishing</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <PackageDropdown
+            value={reservationDetails.packageId}
+            onChange={(value) => {
+              setReservationDetails((prev) => ({
+                ...prev,
+                packageId: value,
+              }));
+            }}
+            error={reservationValidationErrors.packageId}
+            categoryId={selectedCategory}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          {renderPackageInfo()}
+          <AddOnSelection
+            selectedAddOns={reservationDetails.addOns}
+            onAddOnChange={handleAddOnChange}
+          />
+        </Grid>
+      </Grid>
+
+      {renderButtons()}
     </Paper>
   );
 
   const renderOtherOptions = () => (
     <Paper elevation={0} sx={{ p: 4, border: "1px solid #e0e0e0" }}>
-      <Typography variant="body1" gutterBottom>
-        Provide other preference date if your date is flexible and you have
-        other different options
+      <Typography variant="h6" sx={{ mb: 3 }}>
+        Other Options
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <FormControl fullWidth sx={{ bgcolor: "white", borderRadius: 1 }}>
-            <TextField
-              label="Alternative Date 1"
-              value={
-                otherOptions.alternativeDate1
-                  ? dayjs(otherOptions.alternativeDate1).format("DD/MM/YYYY")
-                  : ""
-              }
-              placeholder="Select a date"
-              helperText="Click to select a date"
-              onClick={handleAlternativeDateClick("alternativeDate1")}
-              InputProps={{
-                readOnly: true,
-                startAdornment: (
-                  <CalendarTodayIcon sx={{ mr: 1, color: "action.active" }} />
-                ),
-              }}
-            />
-          </FormControl>
-          <Popover
-            open={Boolean(alternativeDate1AnchorEl)}
-            anchorEl={alternativeDate1AnchorEl}
-            onClose={handleAlternativeDateClose("alternativeDate1")}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "left",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "left",
-            }}
-            PaperProps={{
-              sx: { p: 2 },
-            }}
-          >
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DateCalendar
-                value={
-                  otherOptions.alternativeDate1
-                    ? dayjs(otherOptions.alternativeDate1)
-                    : null
-                }
-                onChange={handleAlternativeDateChange("alternativeDate1")}
-                minDate={dayjs()}
-                views={["day"]}
-              />
-            </LocalizationProvider>
-          </Popover>
+        <Grid item xs={12} sm={6}>
+          <AlternativeDatePicker
+            label="Alternative Booking Date 1"
+            value={otherOptions.alternativeDate1}
+            onChange={handleDateChange("alternativeDate1")}
+            mainBookingDate={reservationDetails.bookingDate}
+          />
         </Grid>
-
-        <Grid item xs={12}>
-          <FormControl fullWidth sx={{ bgcolor: "white", borderRadius: 1 }}>
-            <TextField
-              label="Alternative Date 2"
-              value={
-                otherOptions.alternativeDate2
-                  ? dayjs(otherOptions.alternativeDate2).format("DD/MM/YYYY")
-                  : ""
-              }
-              placeholder="Select a date"
-              helperText="Click to select a date"
-              onClick={handleAlternativeDateClick("alternativeDate2")}
-              InputProps={{
-                readOnly: true,
-                startAdornment: (
-                  <CalendarTodayIcon sx={{ mr: 1, color: "action.active" }} />
-                ),
-              }}
-            />
-          </FormControl>
-          <Popover
-            open={Boolean(alternativeDate2AnchorEl)}
-            anchorEl={alternativeDate2AnchorEl}
-            onClose={handleAlternativeDateClose("alternativeDate2")}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "left",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "left",
-            }}
-            PaperProps={{
-              sx: { p: 2 },
-            }}
-          >
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DateCalendar
-                value={
-                  otherOptions.alternativeDate2
-                    ? dayjs(otherOptions.alternativeDate2)
-                    : null
-                }
-                onChange={handleAlternativeDateChange("alternativeDate2")}
-                minDate={dayjs()}
-                views={["day"]}
-              />
-            </LocalizationProvider>
-          </Popover>
+        <Grid item xs={12} sm={6}>
+          <AlternativeDatePicker
+            label="Alternative Booking Date 2"
+            value={otherOptions.alternativeDate2}
+            onChange={handleDateChange("alternativeDate2")}
+            mainBookingDate={reservationDetails.bookingDate}
+          />
         </Grid>
-
         <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            Booking Remarks
-          </Typography>
-          <Typography variant="body2" gutterBottom color="text.secondary">
-            Do you have any specific request for your booking?
-          </Typography>
           <TextField
             fullWidth
+            label="Special Remarks/Requests"
+            value={otherOptions.specialRemarks}
+            onChange={handleOtherOptionsChange("specialRemarks")}
+            variant="outlined"
             multiline
             rows={4}
-            value={otherOptions.remarks}
-            onChange={handleOtherOptionsChange("remarks")}
+            inputProps={{ maxLength: 500 }}
+            helperText={`${otherOptions.specialRemarks.length}/500 characters`}
           />
         </Grid>
       </Grid>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-        <Button
-          onClick={handleBack}
-          sx={{
-            bgcolor: "#e0e0e0",
-            color: "black",
-            "&:hover": {
-              bgcolor: "#d0d0d0",
-            },
-          }}
-        >
-          Previous
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          sx={{
-            bgcolor: "#0384BD",
-            color: "white",
-            "&:hover": {
-              bgcolor: "#026890",
-            },
-          }}
-        >
-          Submit
-        </Button>
-      </Box>
+      {renderButtons()}
     </Paper>
   );
-
-  const renderConfirmation = () => (
-    <Paper elevation={0} sx={{ p: 4, border: "1px solid #e0e0e0" }}>
-      <Box sx={{ textAlign: "center", mb: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ color: "#0384BD" }}>
-          Thank You for Your Booking!
-        </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Your booking has been successfully submitted.
-        </Typography>
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          One of our agents will contact you within the next 24 hours to confirm
-          your booking details.
-        </Typography>
-      </Box>
-
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Booking Details
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Booking Reference
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {bookingConfirmation?.bookingId}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Customer Name
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {bookingConfirmation?.customer.firstName}{" "}
-              {bookingConfirmation?.customer.lastName}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Package Type
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {bookingConfirmation?.reservation.packageDetails?.name}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">
-              Primary Booking Date
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              {formatDisplayDate(bookingConfirmation?.reservation.bookingDate)}
-            </Typography>
-          </Grid>
-          {bookingConfirmation?.otherOptions.alternativeDate1 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Alternative Date 1
-              </Typography>
-              <Typography variant="body1">
-                {formatDisplayDate(
-                  bookingConfirmation.otherOptions.alternativeDate1
-                )}
-              </Typography>
-            </Grid>
-          )}
-          {bookingConfirmation?.otherOptions.alternativeDate2 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Alternative Date 2
-              </Typography>
-              <Typography variant="body1">
-                {formatDisplayDate(
-                  bookingConfirmation.otherOptions.alternativeDate2
-                )}
-              </Typography>
-            </Grid>
-          )}
-          {bookingConfirmation?.otherOptions.remarks && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="text.secondary">
-                Remarks
-              </Typography>
-              <Typography variant="body1">
-                {bookingConfirmation.otherOptions.remarks}
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
-      </Box>
-
-      <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Button
-          variant="contained"
-          onClick={() => navigate("/")}
-          sx={{
-            bgcolor: "#0384BD",
-            color: "white",
-            "&:hover": {
-              bgcolor: "#026890",
-            },
-          }}
-        >
-          Return to Home
-        </Button>
-      </Box>
-    </Paper>
-  );
-
-  const renderPackageDetails = (pkg: PackageOption) => {
-    if (pkg.packageType === "FISHING") {
-      return (
-        <Box>
-          <Typography>
-            Price from RM{pkg.priceMin} - RM{pkg.priceMax}
-          </Typography>
-          <Typography>Rent up to {pkg.duration}</Typography>
-          <Typography>{pkg.capacity} persons max capacity</Typography>
-          <Typography variant="h6" sx={{ mt: 2 }}>
-            Service Includes:
-          </Typography>
-          <List>
-            {pkg.services.map((service, index) => (
-              <ListItem key={`service-${pkg.id}-${index}`} dense>
-                <ListItemIcon>
-                  <CircleIcon sx={{ fontSize: 8 }} />
-                </ListItemIcon>
-                <ListItemText primary={service} />
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      );
-    }
-
-    return (
-      <Box>
-        {pkg.privateBoatPrice ? (
-          <Typography>RM{pkg.privateBoatPrice} | Private boat</Typography>
-        ) : (
-          <>
-            <Typography>RM{pkg.adultPrice} | Adult</Typography>
-            {pkg.kidPrice && (
-              <Typography>RM{pkg.kidPrice} | Kids (4-11)</Typography>
-            )}
-            <Typography>FREE | Kids (0-3)</Typography>
-          </>
-        )}
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          Service Includes:
-        </Typography>
-        <List>
-          {pkg.services.map((service, index) => (
-            <ListItem key={`service-${pkg.id}-${index}`} dense>
-              <ListItemIcon>
-                <CircleIcon sx={{ fontSize: 8 }} />
-              </ListItemIcon>
-              <ListItemText primary={service} />
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-    );
-  };
-
-  const formatDisplayDate = (dateStr: string | null) => {
-    if (!dateStr) return "";
-    return dayjs(dateStr).format("YYYY-MM-DD");
-  };
-
-  const BookingConfirmationSection = ({
-    confirmation,
-  }: {
-    confirmation: BookingConfirmation;
-  }) => {
-    console.log("Rendering confirmation section with:", confirmation);
-
-    return (
-      <Box sx={{ maxWidth: 800, mx: "auto", p: 3 }}>
-        <Paper sx={{ p: 4, mb: 4 }}>
-          <Typography variant="h4" gutterBottom color="primary" align="center">
-            Thank You for Your Booking!
-          </Typography>
-          <Typography
-            variant="subtitle1"
-            gutterBottom
-            align="center"
-            sx={{ mb: 4 }}
-          >
-            Your booking reference number is:{" "}
-            <strong>{confirmation.bookingId}</strong>
-          </Typography>
-
-          {/* Customer Information */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Customer Information
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Name:</strong> {confirmation.customer.firstName}{" "}
-                  {confirmation.customer.lastName}
-                </Typography>
-                <Typography>
-                  <strong>Email:</strong> {confirmation.customer.email}
-                </Typography>
-                <Typography>
-                  <strong>Phone:</strong> {confirmation.customer.phoneNumber}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Address:</strong> {confirmation.customer.addressLine1}
-                </Typography>
-                {confirmation.customer.addressLine2 && (
-                  <Typography>{confirmation.customer.addressLine2}</Typography>
-                )}
-                <Typography>
-                  {confirmation.customer.postalCode}{" "}
-                  {confirmation.customer.city}, {confirmation.customer.country}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          {/* Reservation Details */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Reservation Details
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Jetty Location:</strong>{" "}
-                  {confirmation.reservation.jettyLocation}
-                </Typography>
-                <Typography>
-                  <strong>Number of Passengers:</strong>{" "}
-                  {confirmation.reservation.numberOfPassengers}
-                </Typography>
-                <Typography>
-                  <strong>Package Type:</strong>{" "}
-                  {confirmation.reservation.packageType}
-                </Typography>
-                <Typography>
-                  <strong>Booking Date:</strong>{" "}
-                  {formatDisplayDate(confirmation.reservation.bookingDate)}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                {confirmation.reservation.packageDetails && (
-                  <>
-                    <Typography>
-                      <strong>Package Name:</strong>{" "}
-                      {confirmation.reservation.packageDetails.name}
-                    </Typography>
-                    <Typography>
-                      <strong>Description:</strong>{" "}
-                      {confirmation.reservation.packageDetails.description}
-                    </Typography>
-                  </>
-                )}
-              </Grid>
-              {confirmation.reservation.addOns &&
-                confirmation.reservation.addOns.length > 0 && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-                      <strong>Selected Add-ons:</strong>
-                    </Typography>
-                    <List dense>
-                      {confirmation.reservation.addOns.map((addon, index) => (
-                        <ListItem key={index}>
-                          <ListItemIcon>
-                            <CheckCircleOutline color="primary" />
-                          </ListItemIcon>
-                          <ListItemText primary={addon} />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Grid>
-                )}
-            </Grid>
-          </Paper>
-
-          {/* Other Options */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Additional Information
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                {confirmation.otherOptions.alternativeDate1 && (
-                  <Typography gutterBottom>
-                    <strong>Alternative Date 1:</strong>{" "}
-                    {formatDisplayDate(
-                      confirmation.otherOptions.alternativeDate1
-                    )}
-                  </Typography>
-                )}
-                {confirmation.otherOptions.alternativeDate2 && (
-                  <Typography gutterBottom>
-                    <strong>Alternative Date 2:</strong>{" "}
-                    {formatDisplayDate(
-                      confirmation.otherOptions.alternativeDate2
-                    )}
-                  </Typography>
-                )}
-                {confirmation.otherOptions.remarks && (
-                  <Typography>
-                    <strong>Special Requests:</strong>{" "}
-                    {confirmation.otherOptions.remarks}
-                  </Typography>
-                )}
-              </Grid>
-            </Grid>
-          </Paper>
-
-          {/* Action Buttons */}
-          <Box
-            sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 4 }}
-          >
-            <Button
-              variant="contained"
-              startIcon={<Home />}
-              onClick={() => navigate("/")}
-              sx={{
-                bgcolor: "#0384BD",
-                color: "white",
-                "&:hover": {
-                  bgcolor: "#026890",
-                },
-              }}
-            >
-              Return Home
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Print />}
-              onClick={() => window.print()}
-              sx={{
-                color: "#0384BD",
-                borderColor: "#0384BD",
-                "&:hover": {
-                  borderColor: "#026890",
-                },
-              }}
-            >
-              Print Details
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-    );
-  };
-
-  useEffect(() => {
-    console.log("Current booking confirmation:", bookingConfirmation);
-  }, [bookingConfirmation]);
-
-  const renderThankYouSection = () => {
-    if (!bookingConfirmation) {
-      console.log("No booking confirmation data available");
-      return null;
-    }
-
-    return (
-      <Box sx={{ maxWidth: 800, mx: "auto", p: 3 }}>
-        <Paper sx={{ p: 4, mb: 4 }}>
-          <Typography variant="h4" gutterBottom color="primary" align="center">
-            Thank You for Your Booking!
-          </Typography>
-          <Typography
-            variant="subtitle1"
-            gutterBottom
-            align="center"
-            sx={{ mb: 4 }}
-          >
-            Your booking reference number is:{" "}
-            <strong>{bookingConfirmation.bookingId}</strong>
-          </Typography>
-
-          {/* Customer Information */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Customer Information
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Name:</strong>{" "}
-                  {bookingConfirmation.customer.firstName}{" "}
-                  {bookingConfirmation.customer.lastName}
-                </Typography>
-                <Typography>
-                  <strong>Email:</strong> {bookingConfirmation.customer.email}
-                </Typography>
-                <Typography>
-                  <strong>Phone:</strong>{" "}
-                  {bookingConfirmation.customer.phoneNumber}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Address:</strong>{" "}
-                  {bookingConfirmation.customer.addressLine1}
-                </Typography>
-                {bookingConfirmation.customer.addressLine2 && (
-                  <Typography>
-                    {bookingConfirmation.customer.addressLine2}
-                  </Typography>
-                )}
-                <Typography>
-                  {bookingConfirmation.customer.postalCode}{" "}
-                  {bookingConfirmation.customer.city},{" "}
-                  {bookingConfirmation.customer.country}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          {/* Reservation Details */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Reservation Details
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Jetty Location:</strong>{" "}
-                  {bookingConfirmation.reservation.jettyLocation}
-                </Typography>
-                <Typography>
-                  <strong>Number of Passengers:</strong>{" "}
-                  {bookingConfirmation.reservation.numberOfPassengers}
-                </Typography>
-                <Typography>
-                  <strong>Package Type:</strong>{" "}
-                  {bookingConfirmation.reservation.packageType}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography>
-                  <strong>Booking Date:</strong>{" "}
-                  {formatDisplayDate(
-                    bookingConfirmation.reservation.bookingDate
-                  )}
-                </Typography>
-                {bookingConfirmation.reservation.packageDetails && (
-                  <>
-                    <Typography>
-                      <strong>Package Name:</strong>{" "}
-                      {bookingConfirmation.reservation.packageDetails.name}
-                    </Typography>
-                    <Typography>
-                      <strong>Duration:</strong>{" "}
-                      {bookingConfirmation.reservation.packageDetails.duration}
-                    </Typography>
-                  </>
-                )}
-              </Grid>
-            </Grid>
-
-            {/* Add-ons Section */}
-            {bookingConfirmation.reservation.addOns &&
-              bookingConfirmation.reservation.addOns.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    <strong>Selected Add-ons:</strong>
-                  </Typography>
-                  <List dense>
-                    {bookingConfirmation.reservation.addOns.map(
-                      (addon, index) => (
-                        <ListItem key={index}>
-                          <ListItemIcon>
-                            <CheckCircleOutline color="primary" />
-                          </ListItemIcon>
-                          <ListItemText primary={addon} />
-                        </ListItem>
-                      )
-                    )}
-                  </List>
-                </Box>
-              )}
-          </Paper>
-
-          {/* Other Options */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Additional Information
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                {bookingConfirmation.otherOptions.alternativeDate1 && (
-                  <Typography gutterBottom>
-                    <strong>Alternative Date 1:</strong>{" "}
-                    {formatDisplayDate(
-                      bookingConfirmation.otherOptions.alternativeDate1
-                    )}
-                  </Typography>
-                )}
-                {bookingConfirmation.otherOptions.alternativeDate2 && (
-                  <Typography gutterBottom>
-                    <strong>Alternative Date 2:</strong>{" "}
-                    {formatDisplayDate(
-                      bookingConfirmation.otherOptions.alternativeDate2
-                    )}
-                  </Typography>
-                )}
-                {bookingConfirmation.otherOptions.remarks && (
-                  <Typography>
-                    <strong>Special Requests:</strong>{" "}
-                    {bookingConfirmation.otherOptions.remarks}
-                  </Typography>
-                )}
-              </Grid>
-            </Grid>
-          </Paper>
-
-          {/* Action Buttons */}
-          <Box
-            sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 4 }}
-          >
-            <Button
-              variant="contained"
-              startIcon={<Home />}
-              onClick={() => navigate("/")}
-              sx={{
-                bgcolor: "#0384BD",
-                color: "white",
-                "&:hover": {
-                  bgcolor: "#026890",
-                },
-              }}
-            >
-              Return Home
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Print />}
-              onClick={() => window.print()}
-              sx={{
-                color: "#0384BD",
-                borderColor: "#0384BD",
-                "&:hover": {
-                  borderColor: "#026890",
-                },
-              }}
-            >
-              Print Details
-            </Button>
-          </Box>
-        </Paper>
-      </Box>
-    );
-  };
-
-  useEffect(() => {
-    if (bookingConfirmation) {
-      console.log("Booking confirmation updated:", bookingConfirmation);
-      console.log("Show thank you:", showThankYou);
-      console.log("Active step:", activeStep);
-    }
-  }, [bookingConfirmation, showThankYou, activeStep]);
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "background.default",
-      }}
-    >
-      <Header hideSearch={true} />
-      <Container
-        maxWidth="lg"
-        sx={{
-          py: 6,
-          flex: 1,
-          mt: 2,
-        }}
-      >
-        <Typography
-          variant="h4"
-          gutterBottom
-          align="center"
-          sx={{
-            fontFamily: "Playfair Display, serif",
-            mb: 4,
+    <>
+      <Helmet>
+        <title>Make an Inquiry | Rhumuda Boat Charter</title>
+        <meta name="description" content="Book your boat charter experience with Rhumuda. Make an inquiry for our boat charter services, fishing trips, or island hopping adventures" />
+      </Helmet>
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <Typography variant="h4" component="h1" sx={{ mb: 4 }}>
+            Booking Inquiry
+          </Typography>
+
+          {activeSection === 0 && renderCustomerInfo()}
+          {activeSection === 1 && renderReservationDetails()}
+          {activeSection === 2 && renderOtherOptions()}
+        </Box>
+
+        <Dialog
+          open={clearDialogOpen}
+          onClose={() => setClearDialogOpen(false)}
+          PaperProps={{
+            sx: {
+              width: "400px",
+              borderRadius: "12px",
+            },
           }}
         >
-          Booking Details
-        </Typography>
-
-        {showThankYou && bookingConfirmation ? (
-          <BookingConfirmationSection confirmation={bookingConfirmation} />
-        ) : (
-          <>
-            <Stepper
-              activeStep={activeStep}
+          <DialogTitle
+            sx={{
+              bgcolor: "#0384BD",
+              color: "white",
+              py: 2,
+            }}
+          >
+            Clear Sections
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Typography sx={{ mb: 2 }}>
+              Are you sure you want to clear your progress? Please select which
+              section you want to clear:
+            </Typography>
+            <Box
               sx={{
-                mb: 6,
-                "& .MuiStepConnector-line": {
-                  marginTop: "12px",
-                },
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+                mb: 2,
               }}
             >
-              {steps.map((label, index) => (
-                <Step key={`step-${label}-${index}`}>
-                  <StepLabel
-                    StepIconProps={{
-                      sx: {
-                        width: 40,
-                        height: 40,
-                        "& .MuiStepIcon-text": {
-                          display: "none",
-                        },
-                        "&.Mui-active": {
-                          color: "#0384BD",
-                        },
-                        "&.Mui-completed": {
-                          color: "#0384BD",
-                        },
-                      },
-                    }}
-                    sx={{
-                      flexDirection: "column",
-                      alignItems: "center",
-                      "& .MuiStepLabel-label": {
-                        marginTop: 1,
-                        fontSize: "0.875rem",
-                        fontWeight: 500,
-                        mt: 1.5,
-                        textAlign: "center",
-                      },
-                    }}
-                  >
-                    {label}
-                  </StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-            {activeStep === 0 && (
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 4,
-                  border: "1px solid #e0e0e0",
-                  bgcolor: "#f5f5f5",
-                }}
-              >
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="First Name"
-                      value={customerInfo.firstName}
-                      onChange={handleInputChange("firstName")}
-                      error={shouldShowError("firstName")}
-                      helperText={
-                        shouldShowError("firstName")
-                          ? "First name is required"
-                          : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({
-                          ...prev,
-                          firstName: true,
-                        }))
-                      }
-                      sx={textFieldSx("firstName")}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Last Name"
-                      value={customerInfo.lastName}
-                      onChange={handleInputChange("lastName")}
-                      error={shouldShowError("lastName")}
-                      helperText={
-                        shouldShowError("lastName")
-                          ? "Last name is required"
-                          : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({
-                          ...prev,
-                          lastName: true,
-                        }))
-                      }
-                      sx={textFieldSx("lastName")}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Phone Number"
-                      value={customerInfo.phoneNumber}
-                      onChange={handleInputChange("phoneNumber")}
-                      error={shouldShowError("phoneNumber")}
-                      helperText={
-                        shouldShowError("phoneNumber")
-                          ? "Phone number is required"
-                          : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({
-                          ...prev,
-                          phoneNumber: true,
-                        }))
-                      }
-                      sx={textFieldSx("phoneNumber")}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      type="email"
-                      label="Email Address"
-                      value={customerInfo.email}
-                      onChange={handleInputChange("email")}
-                      error={shouldShowError("email")}
-                      helperText={
-                        shouldShowError("email") ? "Email is required" : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({ ...prev, email: true }))
-                      }
-                      sx={textFieldSx("email")}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Address Line 1"
-                      value={customerInfo.addressLine1}
-                      onChange={handleInputChange("addressLine1")}
-                      error={shouldShowError("addressLine1")}
-                      helperText={
-                        shouldShowError("addressLine1")
-                          ? "Address line 1 is required"
-                          : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({
-                          ...prev,
-                          addressLine1: true,
-                        }))
-                      }
-                      sx={textFieldSx("addressLine1")}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Address Line 2"
-                      value={customerInfo.addressLine2}
-                      onChange={handleInputChange("addressLine2")}
-                      sx={{
-                        bgcolor: "white",
-                        borderRadius: 1,
-                        "& .MuiOutlinedInput-root": {
-                          "& fieldset": {
-                            borderColor: "#e0e0e0",
-                          },
-                        },
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Postal Code"
-                      value={customerInfo.postalCode}
-                      onChange={handleInputChange("postalCode")}
-                      error={shouldShowError("postalCode")}
-                      helperText={
-                        shouldShowError("postalCode")
-                          ? "Postal code is required"
-                          : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({
-                          ...prev,
-                          postalCode: true,
-                        }))
-                      }
-                      sx={textFieldSx("postalCode")}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="City"
-                      value={customerInfo.city}
-                      onChange={handleInputChange("city")}
-                      error={shouldShowError("city")}
-                      helperText={
-                        shouldShowError("city") ? "City is required" : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({ ...prev, city: true }))
-                      }
-                      sx={textFieldSx("city")}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      required
-                      fullWidth
-                      label="Country"
-                      value={customerInfo.country}
-                      onChange={handleInputChange("country")}
-                      error={shouldShowError("country")}
-                      helperText={
-                        shouldShowError("country") ? "Country is required" : ""
-                      }
-                      onBlur={() =>
-                        setTouchedFields((prev) => ({ ...prev, country: true }))
-                      }
-                      sx={textFieldSx("country")}
-                    />
-                  </Grid>
-                </Grid>
-
-                <Box
-                  sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}
-                >
-                  <Button
-                    onClick={handleNext}
-                    sx={{
-                      bgcolor: "#0384BD",
-                      color: "white",
-                      "&:hover": {
-                        bgcolor: "#026890",
-                      },
-                    }}
-                  >
-                    Next
-                  </Button>
-                </Box>
-              </Paper>
-            )}
-            {activeStep === 1 && renderReservationDetails()}
-            {activeStep === 2 && renderOtherOptions()}
-            {activeStep === 3 && renderConfirmation()}
-          </>
-        )}
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={sectionsToDelete.customerInfo}
+                    onChange={handleSectionChange("customerInfo")}
+                  />
+                }
+                label="Customer Information"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={sectionsToDelete.reservationDetails}
+                    onChange={handleSectionChange("reservationDetails")}
+                  />
+                }
+                label="Reservation Details"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={sectionsToDelete.otherOptions}
+                    onChange={handleSectionChange("otherOptions")}
+                  />
+                }
+                label="Other Options"
+              />
+            </Box>
+            <Divider sx={{ my: 2 }} />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={
+                    sectionsToDelete.customerInfo &&
+                    sectionsToDelete.reservationDetails &&
+                    sectionsToDelete.otherOptions
+                  }
+                  onChange={handleSelectAllSections}
+                />
+              }
+              label="All of the above"
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button
+              onClick={() => setClearDialogOpen(false)}
+              variant="outlined"
+              sx={{ color: "#0384BD", borderColor: "#0384BD" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleClearConfirm}
+              variant="contained"
+              sx={{ bgcolor: "#FF0000", "&:hover": { bgcolor: "#D32F2F" } }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
-    </Box>
+    </>
   );
 };
 

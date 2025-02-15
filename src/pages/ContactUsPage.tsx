@@ -1,160 +1,165 @@
-import React from "react";
-import { Box, Container, Typography, Grid, Paper } from "@mui/material";
-import WhatsAppIcon from "@mui/icons-material/WhatsApp";
-import PhoneIcon from "@mui/icons-material/Phone";
-import EmailIcon from "@mui/icons-material/Email";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
+import React from 'react';
+import { Helmet } from 'react-helmet-async';
+import { Box, Typography, Container, Grid, Paper } from '@mui/material';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
 
-const ContactUsPage = () => {
+const ContactUsPage: React.FC = () => {
+  const handleWhatsAppClick = () => {
+    window.open('https://wa.link/zfhxeq', '_blank');
+  };
+
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "background.default",
-      }}
-    >
-      <Header />
-      <Container maxWidth="lg" sx={{ py: 3, flex: 1 }}>
-        <Typography
-          variant="h4"
-          component="h1"
-          align="center"
-          gutterBottom
-          sx={{
-            mb: 3,
-            fontFamily: "Playfair Display, serif",
-          }}
-        >
-          Reach out to us with any questions, we'll try to help!
-        </Typography>
+    <>
+      <Helmet>
+        <title>Contact Us | Rhumuda Boat Charter</title>
+        <meta name="description" content="Get in touch with Rhumuda Boat Charter. Contact us for inquiries, bookings, or any questions about our boat charter services" />
+      </Helmet>
+      <Container maxWidth="xl" sx={{ mt: 8, mb: 8 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h4" component="h1" sx={{ mb: 1, color: '#2C3E50', fontWeight: 500 }}>
+            Reach out to us with any questions, we'll try to help!
+          </Typography>
+          {/* <Typography variant="h6" sx={{ color: '#34495E' }}>
+            Reach out to us with any questions, we'll try to help!
+          </Typography> */}
+        </Box>
 
-        <Grid container spacing={3}>
-          {/* WhatsApp */}
-          <Grid item xs={12} md={4}>
-            {/* https://create.wa.link/ - WhatsApp Link Generator */}
+        <Grid container spacing={3} justifyContent="center">
+          {/* WhatsApp Contact Section */}
+          <Grid item xs={12} sm={6} md={4}>
             <Paper
-              component="a"
-              href="https://wa.link/zfhxeq"
-              target="_blank"
-              rel="noopener noreferrer"
               elevation={0}
+              onClick={handleWhatsAppClick}
               sx={{
-                p: 4,
-                minHeight: "300px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "#f5f5f5",
+                p: 3,
+                textAlign: 'center',
+                bgcolor: '#f8f9fa',
                 borderRadius: 4,
-                textDecoration: "none",
-                color: "inherit",
-                cursor: "pointer",
-                transition: "transform 0.2s ease-in-out",
-                "&:hover": {
-                  transform: "scale(1.02)",
+                cursor: 'pointer',
+                minHeight: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                 },
               }}
             >
-              <WhatsAppIcon
-                sx={{ fontSize: 48, mb: 2.5, color: "primary.main" }}
-              />
-              <Typography variant="h6" align="center" sx={{ mb: 1 }}>
+              <WhatsAppIcon sx={{ fontSize: 36, color: '#1a237e', mb: 1.5 }} />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 0.5, 
+                  color: '#2C3E50',
+                  fontSize: '1.1rem',
+                }}
+              >
                 +6013-631 1100
               </Typography>
-              <Typography
-                variant="h5"
-                component="h3"
-                align="center"
-                sx={{ mb: 2 }}
-              >
+              <Typography variant="subtitle1" sx={{ mb: 1, color: '#2C3E50', fontWeight: 500 }}>
                 Live Chat Hours
               </Typography>
-              <Typography align="center" sx={{ mb: 0.5 }}>
-                Monday - Sunday
-              </Typography>
-              <Typography align="center">6:00 AM - 9:00 PM</Typography>
+              <Box sx={{ mt: 'auto' }}>
+                <Typography variant="body1" sx={{ color: '#34495E', lineHeight: 1.4 }}>
+                  Monday - Sunday
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#34495E', lineHeight: 1.4 }}>
+                  6:00 AM - 9:00 PM
+                </Typography>
+              </Box>
             </Paper>
           </Grid>
 
-          {/* Phone */}
-          <Grid item xs={12} md={4}>
+          {/* Phone Contact */}
+          <Grid item xs={12} sm={6} md={4}>
             <Paper
               elevation={0}
               sx={{
-                p: 4,
-                minHeight: "300px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "#f5f5f5",
+                p: 3,
+                textAlign: 'center',
+                bgcolor: '#f8f9fa',
                 borderRadius: 4,
+                minHeight: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
               }}
             >
-              <PhoneIcon
-                sx={{ fontSize: 48, mb: 2.5, color: "primary.main" }}
-              />
-              <Typography variant="h6" align="center" sx={{ mb: 1 }}>
+              <PhoneIcon sx={{ fontSize: 36, color: '#1a237e', mb: 1.5 }} />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 0.5, 
+                  color: '#2C3E50',
+                  fontSize: '1.1rem',
+                }}
+              >
                 +609 618 6140
               </Typography>
-              <Typography
-                variant="h5"
-                component="h3"
-                align="center"
-                sx={{ mb: 2 }}
-              >
+              <Typography variant="subtitle1" sx={{ mb: 1, color: '#2C3E50', fontWeight: 500 }}>
                 Phone Call Hours
               </Typography>
-              <Typography align="center" sx={{ mb: 0.5 }}>
-                Monday - Friday
-              </Typography>
-              <Typography align="center">6:00 AM - 9:00 PM</Typography>
+              <Box sx={{ mt: 'auto' }}>
+                <Typography variant="body1" sx={{ color: '#34495E', lineHeight: 1.4 }}>
+                  Monday - Friday
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#34495E', lineHeight: 1.4 }}>
+                  6:00 AM - 9:00 PM
+                </Typography>
+              </Box>
             </Paper>
           </Grid>
 
-          {/* Email */}
-          <Grid item xs={12} md={4}>
+          {/* Email Contact */}
+          <Grid item xs={12} sm={6} md={4}>
             <Paper
               elevation={0}
               sx={{
-                p: 4,
-                minHeight: "300px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "#f5f5f5",
+                p: 3,
+                textAlign: 'center',
+                bgcolor: '#f8f9fa',
                 borderRadius: 4,
+                minHeight: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
               }}
             >
-              <EmailIcon
-                sx={{ fontSize: 48, mb: 2.5, color: "primary.main" }}
-              />
-              <Typography variant="h6" align="center" sx={{ mb: 1 }}>
+              <EmailIcon sx={{ fontSize: 36, color: '#1a237e', mb: 1.5 }} />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 0.5, 
+                  color: '#2C3E50',
+                  fontSize: '1.1rem',
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 rhumudaboatcharter@gmail.com
               </Typography>
-              <Typography
-                variant="h5"
-                component="h3"
-                align="center"
-                sx={{ mb: 2 }}
-              >
+              <Typography variant="subtitle1" sx={{ mb: 1, color: '#2C3E50', fontWeight: 500 }}>
                 Email Hours
               </Typography>
-              <Typography align="center" sx={{ mb: 0.5 }}>
-                Monday - Sunday
-              </Typography>
-              <Typography align="center">6:00 AM - 9:00 PM</Typography>
+              <Box sx={{ mt: 'auto' }}>
+                <Typography variant="body1" sx={{ color: '#34495E', lineHeight: 1.4 }}>
+                  Monday - Sunday
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#34495E', lineHeight: 1.4 }}>
+                  6:00 AM - 9:00 PM
+                </Typography>
+              </Box>
             </Paper>
           </Grid>
         </Grid>
       </Container>
-      <Footer />
-    </Box>
+    </>
   );
 };
 

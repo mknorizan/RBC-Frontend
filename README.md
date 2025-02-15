@@ -1,280 +1,70 @@
-# Rhumuda Boat Charter - Frontend Documentation
+# Getting Started with Create React App
 
-## Overview
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-Rhumuda Boat Charter's frontend is a React-based single-page application built with TypeScript and Material-UI. The system handles boat charter inquiries through an intuitive user interface with real-time validation and responsive design.
+## Available Scripts
 
-## Technical Stack
+In the project directory, you can run:
 
-### Core Technologies
-- React 18.2.0
-- TypeScript 5.0.2
-- Vite 4.4.5 (Build tool)
-- Material-UI v5 (Component library)
-- React Router v6 (Routing)
-- Axios (HTTP client)
-- DayJS (Date handling)
+### `npm start`
 
-### Development Tools
-- ESLint (Code linting)
-- Prettier (Code formatting)
-- TypeScript ESLint Parser
-- Vite Plugin React (HMR support)
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-## Project Structure
-```bash
-typescript
-src/
-├── assets/ # Static assets
-│ ├── icons/ # SVG icons and icon assets
-│ └── images/ # Image files (.png, .jpg, .webp)
-├── components/ # Reusable components
-│ ├── layout/ # Layout components
-│ │ ├── Header.tsx # Main navigation header
-│ │ ├── Footer.tsx # Site footer
-│ │ └── MenuDropdown.tsx # Navigation menu
-│ ├── search/ # Search-related components
-│ │ ├── SearchBar.tsx # Main search interface
-│ │ └── CharterTypeSelector.tsx # Charter type toggle
-│ └── packages/ # Package display components
-│ ├── PackageCard.tsx # Individual package display
-│ └── PackageGrid.tsx # Package listing grid
-├── pages/ # Page components
-│ ├── HomePage.tsx # Landing page
-│ ├── AboutUsPage.tsx # About page
-│ ├── ContactPage.tsx # Contact information
-│ └── ServicesPage.tsx # Services listing
-├── theme/ # Theme configuration
-│ └── theme.ts # MUI theme customization
-├── routes/ # Routing configuration
-│ └── routes.tsx # Route definitions
-├── services/ # API services
-│ └── api.ts # Axios configuration
-├── types/ # TypeScript type definitions
-│ └── index.ts # Shared types
-└── utils/ # Utility functions
-├── dateUtils.ts # Date handling
-└── validation.ts # Form validation
-```
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
-## Component Architecture
+### `npm test`
 
-### Layout Components
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-#### Header (`Header.tsx`)
-- Responsive navigation bar
-- Sticky positioning with scroll behavior
-- Collapsible menu for mobile
-- Integrated search bar
-- Props:
-  - `elevation?: number`
-  - `position?: "fixed" | "sticky"`
+### `npm run build`
 
-#### Footer (`Footer.tsx`)
-- Social media links
-- Copyright information
-- Contact links
-- Responsive layout
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-### Search Components
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-#### SearchBar (`SearchBar.tsx`)
-- Jetty location selector
-- Date picker integration
-- Passenger counter
-- Search submission handler
-- Props:
-  - `onSearch: (params: SearchParams) => void`
-  - `defaultLocation?: string`
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-#### CharterTypeSelector (`CharterTypeSelector.tsx`)
-- Toggle between recreation/fishing
-- Custom styled buttons
-- Visual feedback
-- Props:
-  - `selected: CharterType`
-  - `onChange: (type: CharterType) => void`
+### `npm run eject`
 
-### Package Components
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-#### PackageCard (`PackageCard.tsx`)
-- Package information display
-- Price formatting
-- Service list
-- Booking action button
-- Props:
-  - `package: PackageType`
-  - `onBook: (id: string) => void`
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-#### PackageGrid (`PackageGrid.tsx`)
-- Responsive grid layout
-- Filtering capabilities
-- Sorting options
-- Props:
-  - `packages: PackageType[]`
-  - `filters: FilterOptions`
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-## Theme Configuration
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-### Color Palette
-```bash
-typescript
-palette: {
-primary: {
-main: '#1976d2',
-light: '#42a5f5',
-dark: '#1565c0'
-},
-secondary: {
-main: '#9c27b0',
-light: '#ba68c8',
-dark: '#7b1fa2'
-}
-}
-```
+## Learn More
 
-### Typography
-- Font Family: 'Inter', sans-serif
-- Scale:
-  - h1: 2.5rem
-  - h2: 2rem
-  - h3: 1.75rem
-  - body1: 1rem
-  - body2: 0.875rem
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-### Breakpoints
-- xs: 0px
-- sm: 600px
-- md: 900px
-- lg: 1200px
-- xl: 1536px
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-## API Integration
+### Code Splitting
 
-### Endpoints
-- GET `/api/packages`: Fetch available packages
-- POST `/api/bookings`: Submit booking inquiry
-- GET `/api/locations`: Fetch jetty locations
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-### Error Handling
-- Network errors
-- Validation errors
-- Server errors
-- Timeout handling
+### Analyzing the Bundle Size
 
-## State Management
-- Local component state using useState
-- Context API for theme/auth
-- Props drilling minimized
-- Custom hooks for shared logic
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
-## Form Handling
-- Material-UI form components
-- Real-time validation
-- Error messaging
-- Submit handling
+### Making a Progressive Web App
 
-## Responsive Design
-- Mobile-first approach
-- Breakpoint-specific layouts
-- Flexible grids
-- Touch-friendly interfaces
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
-## Performance Optimization
-- Lazy loading for routes
-- Image optimization
-- Code splitting
-- Bundle size optimization
+### Advanced Configuration
 
-## Development Setup
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-1. Install dependencies:
-```bash
-npm install
-```
+### Deployment
 
-2. Environment setup:
-```bash
-cp .env.example .env
-```
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-3. Configure environment variables:
-```bash
-env
-VITE_API_URL=http://localhost:8080
-VITE_GOOGLE_MAPS_KEY=your_key_here
-```
+### `npm run build` fails to minify
 
-4. Start development server:
-```bash
-npm run dev
-```
-
-## Build Process
-
-1. Production build:
-```bash
-npm run build
-```
-
-2. Serve production build:
-```bash
-npm run preview
-```
-
-2. Preview build:
-```bash
-npm run preview
-```
-
-## Testing
-
-1. Run tests:
-```bash
-npm run test
-```
-
-2. Coverage report:
-```bash
-npm run test:coverage
-```
-
-## Code Style
-
-- ESLint configuration
-- Prettier settings
-- TypeScript strict mode
-- Import ordering
-- Component naming conventions
-
-## Deployment
-
-1. Build the application
-2. Verify environment variables
-3. Deploy static files
-4. Configure routing
-
-## Browser Support
-- Chrome (last 2 versions)
-- Firefox (last 2 versions)
-- Safari (last 2 versions)
-- Edge (last 2 versions)
-
-## Known Issues
-1. Date picker mobile responsiveness
-2. Safari form autofill styling
-3. IE11 not supported
-
-## Contributing
-1. Fork repository
-2. Create feature branch
-3. Follow code style
-4. Submit pull request
-
-## License
-MIT License
-
-## Contact
-For technical support or queries:
-- Email: support@rhumuda.com
-- Documentation: [Internal Wiki]
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

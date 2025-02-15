@@ -1,30 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
   Container,
-  Paper,
   Typography,
   Box,
+  Paper,
   Grid,
+  Stack,
+  Button,
   CircularProgress,
   Alert,
-  Button,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  Snackbar,
+  Chip,
+  Divider,
 } from "@mui/material";
-import Header from "../components/layout/Header";
-import axiosInstance from "../config/axios";
-import CircleIcon from "@mui/icons-material/Circle";
-import rhumudaMap from "../assets/maps/rhumuda-map.png";
+import dayjs from "dayjs";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PaidIcon from "@mui/icons-material/Paid";
+import DirectionsBoatIcon from "@mui/icons-material/DirectionsBoat";
+import locationMap from "../assets/images/location-rhumuda.png";
+import Description from "../components/Description";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import EditIcon from "@mui/icons-material/Edit";
+import CompletionDialog from "../components/CompletionDialog";
+import BookingEditDialog from "../components/BookingEditDialog";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PendingIcon from "@mui/icons-material/Pending";
+import ErrorIcon from "@mui/icons-material/Error";
+import SendIcon from "@mui/icons-material/Send";
+import InfoIcon from "@mui/icons-material/Info";
 
-interface SearchParams {
-  jettyPoint: string;
-  bookingDate: string;
-  passengers: number;
-}
-
+// Import interfaces from InquiryPage
 interface CustomerInfo {
   firstName: string;
   lastName: string;
@@ -38,852 +45,1085 @@ interface CustomerInfo {
 }
 
 interface ReservationDetails {
-  jettyLocation: string;
+  jettyPoint: string;
   bookingDate: string;
-  numberOfPassengers: number;
-  packageType: string;
+  passengers: number;
+  packageId: string;
   addOns: string[];
 }
 
 interface OtherOptions {
   alternativeDate1: string;
   alternativeDate2: string;
-  specialRequests: string;
+  specialRemarks: string;
 }
 
-interface PackageOption {
+interface JettyPoint {
   id: number;
-  title: string;
   name: string;
-  type: string;
-  description: string;
-  price: number;
-  services: string[];
-  priceMin?: number;
-  priceMax?: number;
-  distance?: string;
-  techniques?: string[];
+  isActive: boolean;
 }
 
-const addOns = [
-  { id: "lifejacket", name: "Life jacket & Safety equipments", price: 10 },
-  { id: "snorkeling", name: "Snorkeling in water garden", price: 10 },
-  { id: "boattour", name: "Boat tour around Pulau Kapas", price: 25 },
-  { id: "lunch", name: "Lunch Set", price: 10 },
-  { id: "guide", name: "Tourist Guide", price: 10 },
-];
+interface AddOn {
+  id: number;
+  name: string;
+  price: number;
+  isActive: boolean;
+}
 
-const JETTY_COORDINATES = {
-  Rhumuda: {
-    lat: 5.2135,
-    lon: 103.2633,
-    mapUrl: "https://maps.app.goo.gl/LkARLZyNr5NqLqeM7",
-  },
-  "Kuala Terengganu": {
-    lat: 5.3302,
-    lon: 103.1408,
-    mapUrl: "", // Add the Google Maps URL when you have it
-  },
-} as const;
+interface PriceTier {
+  id: number;
+  ageMin: number | null;
+  ageMax: number | null;
+  price: number;
+  type: string;
+  label: string | null;
+}
 
-const SummaryPage = () => {
-  const location = useLocation();
+interface IncludedService {
+  id: number;
+  name?: string;
+  serviceName?: string;
+}
+
+interface Package {
+  id: number;
+  name: string;
+  description: string;
+  basePrice: number;
+  maxCapacity: number;
+  duration: number;
+  distanceMinKm: number | null;
+  distanceMaxKm: number | null;
+  durationMinutes: number | null;
+  isActive: boolean;
+  categoryId: number;
+  priceTiers: PriceTier[];
+  services: IncludedService[];
+}
+
+interface StorageData {
+  customerInfo: CustomerInfo;
+  activeSection: number;
+  reservationDetails: ReservationDetails;
+  otherOptions: OtherOptions;
+  bookingId?: string;
+}
+
+interface BookingData {
+  bookingId: string;
+  status: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  country: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  postalCode: string;
+  jettyPoint: {
+    id: number;
+    name: string;
+  };
+  packageDetails: {
+    id: number;
+    name: string;
+    description: string;
+    basePrice: number;
+    maxCapacity: number;
+    durationMinutes: number;
+    services: Array<{
+      id: number;
+      name: string;
+    }>;
+  };
+  bookingDate: string;
+  passengers: number;
+  alternativeDate1: string | null;
+  alternativeDate2: string | null;
+  specialRemarks: string | null;
+  addOns: Array<{
+    id: number;
+    name: string;
+    price: number;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const STORAGE_KEY = "rhumuda_inquiry_form";
+
+const formatDate = (dateString: string | null) => {
+  return dateString ? dayjs(dateString).format("DD/MM/YYYY") : "Not specified";
+};
+
+const SummaryPage: React.FC = () => {
+  const [data, setData] = useState<StorageData | null>(null);
+  const [jettyPoints, setJettyPoints] = useState<JettyPoint[]>([]);
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const navigate = useNavigate();
-  const [bookingId, setBookingId] = useState<string>("");
-  const [selectedPackage, setSelectedPackage] = useState<PackageOption | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
+  const [clearLocalStorage, setClearLocalStorage] = useState(false);
+  const { bookingId } = useParams<{ bookingId: string }>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [booking, setBooking] = useState<BookingData | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
 
-  const { searchParams, customerInfo, reservationDetails, otherOptions } =
-    location.state as {
-      searchParams: SearchParams;
-      customerInfo: CustomerInfo;
-      reservationDetails: ReservationDetails;
-      otherOptions: OtherOptions;
-    };
+  const fetchBookingData = async () => {
+    if (!bookingId) {
+      setError("No booking ID provided");
+      setLoading(false);
+      return;
+    }
 
-  // Generate booking ID
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch booking data and all packages from all categories
+      const [bookingResponse, ...packageResponses] = await Promise.all([
+        fetch(`http://localhost:8080/api/bookings/${bookingId}`),
+        fetch("http://localhost:8080/api/packages/category/1"),
+        fetch("http://localhost:8080/api/packages/category/2"),
+        fetch("http://localhost:8080/api/packages/category/3"),
+      ]);
+
+      if (!bookingResponse.ok) {
+        const errorData = await bookingResponse.json();
+        throw new Error(errorData.message || "Failed to fetch booking data");
+      }
+
+      // Check if any package response failed
+      const failedPackageResponse = packageResponses.find(
+        (response) => !response.ok
+      );
+      if (failedPackageResponse) {
+        throw new Error("Failed to fetch packages data");
+      }
+
+      const bookingData = await bookingResponse.json();
+      const packagesData = (
+        await Promise.all(packageResponses.map((r) => r.json()))
+      ).flat();
+
+      setBooking(bookingData);
+      setPackages(packagesData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const generateBookingId = () => {
-      const timestamp = new Date().getTime().toString().slice(-6);
-      const random = Math.floor(Math.random() * 1000)
-        .toString()
-        .padStart(3, "0");
-      return `BK${timestamp}${random}`;
-    };
+    if (!bookingId) {
+      setError("No booking ID provided");
+      setLoading(false);
+      return;
+    }
+    fetchBookingData();
+  }, [bookingId]);
 
-    setBookingId(generateBookingId());
-  }, []);
-
-  // Fetch package details
   useEffect(() => {
-    const fetchPackageDetails = async () => {
+    const fetchJettyPoints = async () => {
       try {
-        setIsLoading(true);
-        const response = await axiosInstance.get("/api/packages");
-        const packages = response.data;
-        const selected = packages.find(
-          (pkg: PackageOption) =>
-            String(pkg.id) === String(reservationDetails.packageType)
-        );
-
-        if (selected) {
-          setSelectedPackage(selected);
-        } else {
-          setError("Selected package not found");
-        }
+        const response = await fetch("http://localhost:8080/api/jetty-points");
+        const data = await response.json();
+        setJettyPoints(data);
       } catch (error) {
-        console.error("Error fetching package details:", error);
-        setError("Failed to load package details");
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching jetty points:", error);
       }
     };
 
-    if (reservationDetails.packageType) {
-      fetchPackageDetails();
-    }
-  }, [reservationDetails.packageType]);
+    fetchJettyPoints();
+  }, []);
 
-  const handleEditCustomerInfo = () => {
-    navigate("/inquiry/info", {
-      state: {
-        searchParams,
-        customerInfo,
-        reservationDetails,
-        otherOptions,
-        isEditing: true,
-      },
-    });
+  useEffect(() => {
+    const fetchAddOns = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/addons");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setAddOns(data);
+      } catch (error) {
+        console.error("Error fetching add-ons:", error);
+      }
+    };
+
+    fetchAddOns();
+  }, []);
+
+  const getJettyPointName = (jettyPoint: any) => {
+    return jettyPoint?.name || "Unknown Jetty Point";
   };
 
-  const renderPackageServices = (pkg: PackageOption) => {
-    if (!pkg) return null;
+  const getPackageName = (packageDetails: any) => {
+    return packageDetails?.name || "Unknown Package";
+  };
+
+  const getCategoryName = (categoryId: number) => {
+    switch (categoryId) {
+      case 1:
+        return "Boat Charter";
+      case 2:
+        return "Island Trip";
+      case 3:
+        return "Fishing Trip";
+      default:
+        return "Unknown Category";
+    }
+  };
+
+  const getAddOnName = (id: string) => {
+    const addon = addOns.find((a) => a.id.toString() === id);
+    return addon ? addon.name : id;
+  };
+
+  const renderPackageInfo = (packageId: string) => {
+    const selectedPackage = packages.find(
+      (pkg) => pkg.id.toString() === packageId
+    );
+
+    if (!selectedPackage) return null;
 
     return (
-      <Grid container spacing={3}>
-        {/* Price Information */}
-        <Grid item xs={12}>
-          {pkg.priceMin && pkg.priceMax ? (
-            <Typography variant="h6" color="primary" gutterBottom>
-              Price Range: RM {pkg.priceMin} - RM {pkg.priceMax}
-            </Typography>
-          ) : (
-            <Typography variant="h6" color="primary" gutterBottom>
-              RM {pkg.price}
-            </Typography>
+      <Box sx={{ mt: 2 }}>
+        <Grid container spacing={2}>
+          {/* Package Description */}
+          <Grid item xs={12}>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <CircularProgress size={20} />
+              </Box>
+            ) : (
+              <Description text={selectedPackage.description} />
+            )}
+          </Grid>
+
+          {/* Duration, Capacity, and Distance */}
+          <Grid item xs={12} sm={6}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <AccessTimeIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Typography variant="body2">
+                  Duration: {selectedPackage.durationMinutes} minutes
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <GroupsIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Typography variant="body2">
+                  Max Capacity: {selectedPackage.maxCapacity} persons
+                </Typography>
+              </Stack>
+              {selectedPackage.distanceMinKm &&
+                selectedPackage.distanceMaxKm && (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <DirectionsBoatIcon
+                      sx={{ color: "#0384BD", fontSize: 20 }}
+                    />
+                    <Typography variant="body2">
+                      Distance: {selectedPackage.distanceMinKm} -{" "}
+                      {selectedPackage.distanceMaxKm} km
+                    </Typography>
+                  </Stack>
+                )}
+            </Stack>
+          </Grid>
+
+          {/* Price Tiers */}
+          <Grid item xs={12} sm={6}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <PaidIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Stack>
+                  {selectedPackage.priceTiers?.map((tier) => (
+                    <Typography key={tier.id} variant="body2">
+                      {tier.price === 0 ? "FREE" : `RM${tier.price}`} |{" "}
+                      {tier.type}
+                    </Typography>
+                  ))}
+                </Stack>
+              </Stack>
+            </Stack>
+          </Grid>
+
+          {/* Included Services */}
+          {selectedPackage.services && selectedPackage.services.length > 0 && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Services Included:
+              </Typography>
+              <Stack spacing={0.5}>
+                {selectedPackage.services.map((service) => (
+                  <Typography
+                    key={service.id}
+                    variant="body2"
+                    color="text.secondary"
+                  >
+                    {service.name || service.serviceName}
+                  </Typography>
+                ))}
+              </Stack>
+            </Grid>
           )}
         </Grid>
-
-        {/* Services */}
-        {pkg.services && pkg.services.length > 0 && (
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" gutterBottom sx={{ color: "#555" }}>
-              Services Included:
-            </Typography>
-            <List dense>
-              {pkg.services.map((service, index) => (
-                <ListItem key={index}>
-                  <ListItemIcon>
-                    <CircleIcon sx={{ fontSize: 8, color: "#0384BD" }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={service}
-                    primaryTypographyProps={{
-                      sx: { color: "#555" },
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Grid>
-        )}
-
-        {/* Fishing Specific Details */}
-        {pkg.techniques && pkg.techniques.length > 0 && (
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" gutterBottom sx={{ color: "#555" }}>
-              Fishing Techniques:
-            </Typography>
-            <List dense>
-              {pkg.techniques.map((technique, index) => (
-                <ListItem key={index}>
-                  <ListItemIcon>
-                    <CircleIcon sx={{ fontSize: 8, color: "#0384BD" }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={technique}
-                    primaryTypographyProps={{
-                      sx: { color: "#555" },
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Grid>
-        )}
-
-        {/* Distance Information */}
-        {pkg.distance && (
-          <Grid item xs={12} sx={{ mb: 0, pb: 0 }}>
-            <Typography
-              variant="body1"
-              sx={{
-                color: "#000",
-                mb: 0,
-                pb: 0,
-                lineHeight: 1.5,
-              }}
-            >
-              {pkg.distance} distance covered
-            </Typography>
-          </Grid>
-        )}
-
-        {/* Add-ons Section */}
-        {reservationDetails.addOns && reservationDetails.addOns.length > 0 && (
-          <Grid item xs={12} sx={{ mt: 0, pt: 0 }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                color: "#000",
-                mt: 0,
-                pt: 0,
-                mb: 1,
-                lineHeight: 1.5,
-              }}
-            >
-              Add-ons:
-            </Typography>
-            <List dense>
-              {reservationDetails.addOns.map((addonId) => {
-                const addon = addOns.find((a) => a.id === addonId);
-                return addon ? (
-                  <ListItem key={addon.id}>
-                    <ListItemIcon>
-                      <CircleIcon sx={{ fontSize: 8, color: "#0384BD" }} />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={`${addon.name} (RM ${addon.price})`}
-                      primaryTypographyProps={{
-                        sx: { color: "#000" },
-                      }}
-                    />
-                  </ListItem>
-                ) : null;
-              })}
-            </List>
-          </Grid>
-        )}
-      </Grid>
+      </Box>
     );
+  };
+
+  const handleEditClick = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleBookingUpdate = () => {
+    setSuccessMessage("Booking updated successfully!");
+    fetchBookingData();
+  };
+
+  const handleCloseSuccess = () => {
+    setSuccessMessage(null);
+  };
+
+  useEffect(() => {
+    if (clearLocalStorage) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [clearLocalStorage]);
+
+  const getStatusDetails = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "COMPLETE":
+        return {
+          label: "Booking Complete",
+          color: "success" as const,
+          icon: <CheckCircleIcon />,
+          // description: 'Your booking has been approved by our team.'
+        };
+      case "PENDING":
+        return {
+          label: "Inquiry Sent",
+          color: "warning" as const,
+          icon: <PendingIcon />,
+          // description: 'Your inquiry has been sent and is awaiting approval from our team.'
+        };
+      case "CANCELLED":
+        return {
+          label: "Booking Cancelled",
+          color: "error" as const,
+          icon: <ErrorIcon />,
+          // description: 'This booking has been cancelled.'
+        };
+      case "INCOMPLETE":
+      default:
+        return {
+          label: "Incomplete",
+          color: "error" as const,
+          icon: <ErrorIcon />,
+          // description: 'Please review your booking details and click "Send Inquiry" to submit your booking.'
+        };
+    }
   };
 
   const handleSendInquiry = async () => {
     try {
-      setIsLoading(true);
-      const bookingData = {
-        bookingId,
-        customerInfo,
-        reservationDetails,
-        otherOptions,
-        packageDetails: selectedPackage,
-        totalAmount:
-          (selectedPackage?.priceMin || selectedPackage?.price || 0) +
-          reservationDetails.addOns.reduce((total, addonId) => {
-            const addon = addOns.find((a) => a.id === addonId);
-            return total + (addon?.price || 0);
-          }, 0),
-      };
+      setLoading(true);
 
-      await axiosInstance.post("/api/bookings", bookingData);
+      // First, update the booking status
+      const response = await fetch(
+        `http://localhost:8080/api/bookings/${bookingId}/submit`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      // Navigate to success page or show success message
-      navigate("/booking-success", {
-        state: {
-          bookingId,
-          totalAmount: bookingData.totalAmount,
-        },
-      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit inquiry");
+      }
+
+      setSuccessMessage(
+        "Your inquiry has been sent successfully! Please check your email for confirmation."
+      );
+      setShowCompletionDialog(true);
+      fetchBookingData(); // Refresh to get updated status
     } catch (error) {
       console.error("Error sending inquiry:", error);
-      setError("Failed to send inquiry. Please try again.");
+      setError(
+        error instanceof Error ? error.message : "Failed to send inquiry"
+      );
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const handleCloseDialog = () => {
+    setShowCompletionDialog(false);
+  };
+
+  const renderActionButton = () => {
+    switch (booking?.status) {
+      case "PENDING":
+        return (
+          <Box sx={{ display: 'flex', width: '100%' }}>
+            <Button
+              variant="contained"
+              disabled
+              fullWidth
+              sx={{
+                bgcolor: "rgba(0, 0, 0, 0.12)",
+                color: "rgba(0, 0, 0, 0.38)",
+                py: 1.5,
+                "&:hover": {
+                  bgcolor: "rgba(0, 0, 0, 0.12)",
+                },
+              }}
+            >
+              INQUIRY SENT
+            </Button>
+          </Box>
+        );
+      case "INCOMPLETE":
+      default:
+        return (
+          <Box sx={{ display: 'flex', width: '100%' }}>
+            <Button
+              variant="contained"
+              fullWidth
+              startIcon={<SendIcon />}
+              onClick={handleSendInquiry}
+              disabled={loading}
+              sx={{
+                bgcolor: "#0384BD",
+                py: 1.5,
+                "&:hover": {
+                  bgcolor: "rgba(3, 132, 189, 0.9)",
+                },
+              }}
+            >
+              {loading ? <CircularProgress size={24} /> : "SEND INQUIRY"}
+            </Button>
+          </Box>
+        );
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 4, display: "flex", justifyContent: "center" }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <Typography color="error" variant="h6" gutterBottom>
+            {error}
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={fetchBookingData}
+            startIcon={<RefreshIcon />}
+          >
+            Retry
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <Typography variant="h6">No booking data found</Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  // Add null checks for booking and packages
+  const selectedPackage = booking?.packageDetails?.id
+    ? packages.find((pkg) => pkg.id === booking.packageDetails.id)
+    : null;
+
+  if (!booking || !selectedPackage) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 4, display: "flex", justifyContent: "center" }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Header hideSearch={true} />
-      <Container maxWidth="lg" sx={{ py: 6, flex: 1, mt: 2 }}>
-        <Box sx={{ display: "flex", gap: 4 }}>
-          {/* Left Column - 70% */}
-          <Box sx={{ flex: "0 0 70%" }}>
-            {/* Booking ID and Package Section */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                pb: 3,
-                border: "none",
-                bgcolor: "transparent",
-                borderBottom: "1px solid #e0e0e0",
-                mb: 3,
-              }}
-            >
-              <Box>
-                <Typography variant="h4" gutterBottom>
-                  Booking ID:{" "}
-                  <Box
-                    component="span"
-                    sx={{ color: "#0384BD", fontWeight: 500 }}
-                  >
-                    {bookingId}
-                  </Box>
-                </Typography>
-
-                <Typography variant="h4" gutterBottom>
-                  Package:{" "}
-                  {isLoading ? (
-                    <CircularProgress size={24} />
-                  ) : error ? (
-                    <Alert severity="error" sx={{ mt: 1 }}>
-                      {error}
-                    </Alert>
-                  ) : selectedPackage ? (
-                    <Box
-                      component="span"
-                      sx={{ color: "#333", fontWeight: 500 }}
-                    >
-                      {selectedPackage.title ||
-                        selectedPackage.name ||
-                        selectedPackage.description}
-                    </Box>
-                  ) : (
-                    <Typography component="span" color="text.secondary">
-                      No package selected
-                    </Typography>
-                  )}
-                </Typography>
-              </Box>
-            </Paper>
-
-            {/* Description Section */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                pt: 3,
-                border: "none",
-                bgcolor: "transparent",
-                borderBottom: "1px solid #e0e0e0",
-                mb: 4,
-              }}
-            >
-              <Box>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "#555",
-                    lineHeight: 1.8,
-                    maxWidth: "800px",
-                    fontStyle: "italic",
-                  }}
-                >
-                  Embark on an unforgettable fishing adventure with RhuMuda Boat
-                  Charter. Our experienced captains will take you to the best
-                  fishing spots, where you can cast your line and reel in a
-                  variety of fish species. Whether you're a seasoned angler or a
-                  beginner, we'll provide you with all the necessary equipment
-                  and expert guidance.
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "#555",
-                    lineHeight: 1.8,
-                    maxWidth: "800px",
-                    marginTop: "16px",
-                    fontStyle: "italic",
-                  }}
-                >
-                  Our fishing charters offer a unique opportunity to relax,
-                  unwind, and enjoy the thrill of the catch. We cater to both
-                  inshore, offshore, and night fishing - depending on your
-                  preferences and the season.
-                </Typography>
-              </Box>
-            </Paper>
-
-            {/* Customer Details Section */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                pt: 3,
-                pb: 10,
-                border: "none",
-                bgcolor: "transparent",
-                borderBottom: "1px solid #e0e0e0",
-                mb: 3,
-              }}
-            >
-              <Typography variant="h4" gutterBottom>
-                Customer Details
-              </Typography>
-
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  border: "1px solid #e0e0e0",
-                  bgcolor: "#fff",
-                  position: "relative",
-                }}
-              >
-                <Grid container spacing={4}>
-                  <Grid item xs={12} md={6}>
-                    <Box>
-                      <Typography variant="body1" gutterBottom>
-                        <Box
-                          component="span"
-                          sx={{ color: "#000", fontWeight: "bold" }}
-                        >
-                          Name:{" "}
-                        </Box>
-                        {customerInfo.firstName} {customerInfo.lastName}
-                      </Typography>
-
-                      <Typography variant="body1" gutterBottom sx={{ mt: 2 }}>
-                        <Box
-                          component="span"
-                          sx={{ color: "#000", fontWeight: "bold" }}
-                        >
-                          Email:{" "}
-                        </Box>
-                        {customerInfo.email}
-                      </Typography>
-
-                      <Typography variant="body1" gutterBottom sx={{ mt: 2 }}>
-                        <Box
-                          component="span"
-                          sx={{ color: "#000", fontWeight: "bold" }}
-                        >
-                          Phone:{" "}
-                        </Box>
-                        {customerInfo.phoneNumber}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Box>
-                      <Typography variant="body1">
-                        <Box
-                          component="span"
-                          sx={{ color: "#000", fontWeight: "bold" }}
-                        >
-                          Address:{" "}
-                        </Box>
-                        {customerInfo.addressLine1}
-                        {customerInfo.addressLine2 && (
-                          <>
-                            <br />
-                            {customerInfo.addressLine2}
-                          </>
-                        )}
-                        <br />
-                        {customerInfo.city}, {customerInfo.postalCode}
-                        <br />
-                        {customerInfo.country}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-
-                <Box
-                  sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}
-                >
-                  <Button
-                    onClick={handleEditCustomerInfo}
-                    variant="contained"
-                    size="small"
-                    sx={{
-                      bgcolor: "#0384BD",
-                      color: "white",
-                      "&:hover": {
-                        bgcolor: "#026890",
-                      },
-                    }}
-                  >
-                    Edit Details
-                  </Button>
-                </Box>
-              </Paper>
-            </Paper>
-
-            {/* Services Section */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                pt: 3,
-                pb: 3,
-                border: "none",
-                bgcolor: "transparent",
-                borderBottom: "1px solid #e0e0e0",
-                mb: 3,
-              }}
-            >
-              <Typography variant="h4" gutterBottom>
-                Services
-              </Typography>
-
-              {isLoading ? (
-                <CircularProgress size={24} />
-              ) : error ? (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  {error}
-                </Alert>
-              ) : selectedPackage ? (
-                <Grid container spacing={3}>
-                  {/* Services */}
-                  {selectedPackage.services &&
-                    selectedPackage.services.length > 0 && (
-                      <Grid item xs={12}>
-                        <List dense>
-                          {selectedPackage.services.map((service, index) => (
-                            <ListItem key={index}>
-                              <ListItemIcon>
-                                <CircleIcon
-                                  sx={{ fontSize: 8, color: "#0384BD" }}
-                                />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={service}
-                                primaryTypographyProps={{
-                                  sx: { color: "#555" },
-                                }}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      </Grid>
-                    )}
-
-                  {/* Distance Information */}
-                  {selectedPackage.distance && (
-                    <Grid item xs={12} sx={{ mb: 0, pb: 0 }}>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          color: "#000",
-                          mb: 0,
-                          pb: 0,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {selectedPackage.distance} distance covered
-                      </Typography>
-                    </Grid>
-                  )}
-
-                  {/* Add-ons Section */}
-                  {reservationDetails.addOns &&
-                    reservationDetails.addOns.length > 0 && (
-                      <Grid item xs={12} sx={{ mt: 0, pt: 0 }}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            color: "#000",
-                            mt: 0,
-                            pt: 0,
-                            mb: 1,
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          Add-ons:
-                        </Typography>
-                        <List dense>
-                          {reservationDetails.addOns.map((addonId) => {
-                            const addon = addOns.find((a) => a.id === addonId);
-                            return addon ? (
-                              <ListItem key={addon.id}>
-                                <ListItemIcon>
-                                  <CircleIcon
-                                    sx={{ fontSize: 8, color: "#0384BD" }}
-                                  />
-                                </ListItemIcon>
-                                <ListItemText
-                                  primary={`${addon.name} (RM ${addon.price})`}
-                                  primaryTypographyProps={{
-                                    sx: { color: "#555" },
-                                  }}
-                                />
-                              </ListItem>
-                            ) : null;
-                          })}
-                        </List>
-                      </Grid>
-                    )}
-                </Grid>
-              ) : (
-                <Typography color="text.secondary">
-                  No package details available
-                </Typography>
-              )}
-            </Paper>
-
-            {/* Location Section */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                pb: 10,
-                border: "none",
-                bgcolor: "transparent",
-                borderBottom: "1px solid #e0e0e0",
-                mb: 4,
-              }}
-            >
-              <Typography variant="h4" gutterBottom>
-                Location
-              </Typography>
-
-              <Box>
-                <Box
-                  component="a"
-                  href={
-                    JETTY_COORDINATES[
-                      reservationDetails.jettyLocation as keyof typeof JETTY_COORDINATES
-                    ].mapUrl
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    display: "block",
-                    position: "relative",
-                    cursor: "pointer",
-                    maxWidth: "600px",
-                    "&:hover": {
-                      "& .hover-overlay": {
-                        opacity: 1,
-                      },
-                    },
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={rhumudaMap}
-                    alt="Location Map"
-                    sx={{
-                      width: "100%",
-                      height: "300px",
-                      display: "block",
-                      border: "none",
-                      objectFit: "cover",
-                    }}
-                  />
-                  <Box
-                    className="hover-overlay"
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      bgcolor: "rgba(3, 132, 189, 0.1)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      opacity: 0,
-                      transition: "opacity 0.2s",
-                    }}
-                  >
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: "#0384BD",
-                        bgcolor: "rgba(255, 255, 255, 0.9)",
-                        px: 2,
-                        py: 1,
-                      }}
-                    >
-                      Open in Google Maps
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* Cancellation Policy Section */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: 4,
-                pb: 10,
-                border: "none",
-                bgcolor: "transparent",
-                borderBottom: "1px solid #e0e0e0",
-                mb: 4,
-              }}
-            >
-              <Typography variant="h4" gutterBottom>
-                Cancellation Policy
-              </Typography>
-              <Typography variant="body1" sx={{ color: "#555" }}>
-                Full refund up to 7 days prior
-              </Typography>
-            </Paper>
+    <Container maxWidth="xl" sx={{ py: 2 }}>
+      {/* Main Content Grid */}
+      <Grid container spacing={1.5}>
+        {/* Left Column - 70% */}
+        <Grid item xs={12} md={8}>
+          {/* Booking ID and Package Name Section */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
+              Booking ID: #{booking?.bookingId}
+            </Typography>
+            <Typography variant="h4" sx={{ mb: 1 }}>
+              Category: {getCategoryName(selectedPackage?.categoryId)}
+            </Typography>
+            <Typography variant="h4" sx={{ mb: 2 }}>
+              Package: {getPackageName(booking?.packageDetails)}
+            </Typography>
+            <Divider
+              sx={{ borderColor: "rgba(0, 0, 0, 0.1)", borderWidth: 1 }}
+            />
           </Box>
 
-          {/* Right Column - 30% */}
-          <Box
-            sx={{
-              flex: "0 0 30%",
-              position: "sticky",
-              top: 24,
-              alignSelf: "flex-start",
-              height: "fit-content",
-            }}
-          >
-            <Paper
-              elevation={0}
+          {/* Package Description Section */}
+          <Box sx={{ mb: 2 }}>
+            {selectedPackage?.description && (
+              <>
+                {selectedPackage.description.split('\n\n').map((paragraph, index) => (
+                  <Typography
+                    key={index}
+                    variant="body1"
+                    sx={{
+                      mb: 2,
+                      fontSize: "1.1rem",
+                      color: "black",
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {paragraph.trim()}
+                  </Typography>
+                ))}
+                <Divider
+                  sx={{ borderColor: "rgba(0, 0, 0, 0.1)", borderWidth: 1 }}
+                />
+              </>
+            )}
+          </Box>
+
+          {/* Customer Details Section */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>
+              Customer Details
+            </Typography>
+            <Box
               sx={{
-                p: 4,
-                border: "1px solid #e0e0e0",
-                bgcolor: "#fff",
+                border: "1px solid rgba(0, 0, 0, 0.12)",
+                borderRadius: "4px",
+                p: 3,
+                mb: 3,
               }}
             >
-              <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-                Estimated Cost
-              </Typography>
-
-              <Typography
-                variant="h4"
-                gutterBottom
-                sx={{ mb: 4, fontWeight: 500 }}
-              >
-                MYR{" "}
-                {(selectedPackage?.priceMin || selectedPackage?.price || 0) +
-                  reservationDetails.addOns.reduce((total, addonId) => {
-                    const addon = addOns.find((a) => a.id === addonId);
-                    return total + (addon?.price || 0);
-                  }, 0)}
-                .00
-              </Typography>
-
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" sx={{ color: "#000" }} gutterBottom>
-                  Jetty Location
-                </Typography>
-                <Typography variant="body1" sx={{ color: "#555" }}>
-                  {reservationDetails.jettyLocation}
-                </Typography>
-              </Box>
-
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1" sx={{ color: "#000" }} gutterBottom>
-                    Date
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Typography sx={{ fontSize: "1rem", color: "black", mb: 1 }}>
+                    <strong>Name:</strong>{" "}
+                    {`${booking?.firstName} ${booking?.lastName}`}
                   </Typography>
-                  <Typography variant="body1" sx={{ color: "#555" }}>
-                    {reservationDetails.bookingDate}
+                  <Typography sx={{ fontSize: "1rem", color: "black", mb: 1 }}>
+                    <strong>Email:</strong> {booking?.email}
+                  </Typography>
+                  <Typography sx={{ fontSize: "1rem", color: "black", mb: 1 }}>
+                    <strong>Phone:</strong> {booking?.phoneNumber}
                   </Typography>
                 </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1" sx={{ color: "#000" }} gutterBottom>
-                    Group Size
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: "#555" }}>
-                    {reservationDetails.numberOfPassengers}
+                <Grid item xs={12} md={6}>
+                  <Typography sx={{ fontSize: "1rem", color: "black", mb: 1 }}>
+                    <strong>Address:</strong>{" "}
+                    {`${booking?.addressLine1}${
+                      booking?.addressLine2 ? ` ${booking.addressLine2}` : ""
+                    }, ${booking?.postalCode} ${booking?.city}, ${
+                      booking?.country
+                    }`}
                   </Typography>
                 </Grid>
               </Grid>
-
-              <Button
-                fullWidth
-                onClick={handleSendInquiry}
-                sx={{
-                  bgcolor: "#0384BD",
-                  color: "white",
-                  py: 1.5,
-                  mb: 4,
-                  "&:hover": {
-                    bgcolor: "#026890",
-                  },
-                }}
-              >
-                Send Inquiry
-              </Button>
-
-              <Box sx={{ borderTop: "1px solid #e0e0e0", pt: 3 }}>
-                <Grid container justifyContent="space-between" sx={{ mb: 1 }}>
-                  <Typography variant="subtitle1">Base Cost</Typography>
-                  <Typography variant="subtitle1">
-                    RM {selectedPackage?.priceMin || selectedPackage?.price}
-                  </Typography>
-                </Grid>
-
-                {reservationDetails.addOns &&
-                reservationDetails.addOns.length > 0 ? (
-                  <>
-                    <Grid
-                      container
-                      justifyContent="space-between"
-                      sx={{ mb: 1 }}
-                    >
-                      <Typography variant="subtitle1">Add On:</Typography>
-                      <Typography variant="subtitle1">
-                        {reservationDetails.addOns.map((addonId) => {
-                          const addon = addOns.find((a) => a.id === addonId);
-                          return addon ? (
-                            <Box key={addon.id} sx={{ textAlign: "right" }}>
-                              RM {addon.price}
-                            </Box>
-                          ) : null;
-                        })}
-                      </Typography>
-                    </Grid>
-                  </>
-                ) : (
-                  <Grid container justifyContent="space-between" sx={{ mb: 1 }}>
-                    <Typography variant="subtitle1">Add On:</Typography>
-                    <Typography variant="subtitle1">None</Typography>
-                  </Grid>
-                )}
-
-                <Grid
-                  container
-                  justifyContent="space-between"
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleEditClick}
+                  disabled={booking?.status?.toUpperCase() !== "INCOMPLETE"}
                   sx={{
-                    borderTop: "1px solid #e0e0e0",
-                    pt: 2,
-                    mt: 2,
+                    bgcolor: "#0384BD",
+                    "&:hover": { bgcolor: "#026994" },
+                    textTransform: "none",
+                    borderRadius: "4px",
+                    px: 3,
                   }}
                 >
-                  <Typography variant="h6">Total</Typography>
-                  <Typography variant="h6">
-                    RM{" "}
-                    {(selectedPackage?.priceMin ||
-                      selectedPackage?.price ||
-                      0) +
-                      reservationDetails.addOns.reduce((total, addonId) => {
-                        const addon = addOns.find((a) => a.id === addonId);
-                        return total + (addon?.price || 0);
-                      }, 0)}
-                    .00
-                  </Typography>
-                </Grid>
+                  Edit Details
+                </Button>
               </Box>
-            </Paper>
+            </Box>
+            <Divider
+              sx={{ borderColor: "rgba(0, 0, 0, 0.1)", borderWidth: 1 }}
+            />
           </Box>
-        </Box>
-      </Container>
-    </Box>
+
+          {/* Services Section */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>
+              Services
+            </Typography>
+            <Grid container spacing={1.5}>
+              {/* Duration, Capacity, and Distance */}
+              <Grid item xs={12} md={6}>
+                <Stack spacing={2}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <AccessTimeIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                    <Typography sx={{ fontSize: "1rem", color: "black" }}>
+                      Duration: {selectedPackage?.durationMinutes || 0} minutes
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <GroupsIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                    <Typography sx={{ fontSize: "1rem", color: "black" }}>
+                      Max Capacity: {selectedPackage?.maxCapacity || 0} persons
+                    </Typography>
+                  </Stack>
+                  {selectedPackage?.distanceMinKm &&
+                    selectedPackage?.distanceMaxKm && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <DirectionsBoatIcon
+                          sx={{ color: "#0384BD", fontSize: 20 }}
+                        />
+                        <Typography sx={{ fontSize: "1rem", color: "black" }}>
+                          Distance: {selectedPackage.distanceMinKm} -{" "}
+                          {selectedPackage.distanceMaxKm} km
+                        </Typography>
+                      </Stack>
+                    )}
+                  {(booking?.alternativeDate1 || booking?.alternativeDate2) && (
+                    <Stack direction="row" spacing={1} alignItems="flex-start">
+                      <AccessTimeIcon sx={{ color: "#0384BD", fontSize: 20, mt: 0.3 }} />
+                      <Box>
+                        <Typography sx={{ fontSize: "1rem", color: "black", mb: 0.5 }}>
+                          Alternative Dates:
+                        </Typography>
+                        {booking?.alternativeDate1 && (
+                          <Typography sx={{ fontSize: "1rem", color: "black", ml: 2 }}>
+                            • {formatDate(booking.alternativeDate1)}
+                          </Typography>
+                        )}
+                        {booking?.alternativeDate2 && (
+                          <Typography sx={{ fontSize: "1rem", color: "black", ml: 2 }}>
+                            • {formatDate(booking.alternativeDate2)}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Stack>
+                  )}
+                  {booking?.specialRemarks && (
+                    <Stack direction="row" spacing={1} alignItems="flex-start">
+                      <InfoIcon sx={{ color: "#0384BD", fontSize: 20, mt: 0.3 }} />
+                      <Box>
+                        <Typography sx={{ fontSize: "1rem", color: "black", mb: 0.5 }}>
+                          Special Remarks:
+                        </Typography>
+                        <Typography sx={{ fontSize: "1rem", color: "black", ml: 2 }}>
+                          {booking.specialRemarks}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  )}
+                </Stack>
+              </Grid>
+
+              {/* Included Services - Moved to right side */}
+              <Grid item xs={12} md={6}>
+                <Typography
+                  sx={{
+                    fontSize: "1rem",
+                    color: "black",
+                    fontWeight: "bold",
+                    mb: 1,
+                  }}
+                >
+                  Services Included:
+                </Typography>
+                <Stack spacing={0.5}>
+                  {selectedPackage?.services?.map((service) => (
+                    <Typography
+                      key={service.id}
+                      sx={{ fontSize: "1rem", color: "black" }}
+                    >
+                      {service.name || service.serviceName}
+                    </Typography>
+                  ))}
+                </Stack>
+              </Grid>
+            </Grid>
+            <Divider
+              sx={{ borderColor: "rgba(0, 0, 0, 0.1)", borderWidth: 1, mt: 3 }}
+            />
+          </Box>
+
+          {/* Location Section */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>
+              Location
+            </Typography>
+            <Box
+              component="a"
+              href="https://maps.app.goo.gl/vwFiMqMgWNzB9J8f9"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: "block",
+                cursor: "pointer",
+                width: "100%",
+                "&:hover": {
+                  opacity: 0.9,
+                },
+              }}
+            >
+              <img
+                src={locationMap}
+                alt="Location Map"
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: "4px",
+                  objectFit: "cover",
+                }}
+              />
+            </Box>
+            <Divider
+              sx={{ borderColor: "rgba(0, 0, 0, 0.1)", borderWidth: 1, mt: 3 }}
+            />
+          </Box>
+
+          {/* Cancellation Policy Section */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h4" sx={{ mb: 2 }}>
+              Cancellation Policy
+            </Typography>
+            <Typography sx={{ fontSize: "1rem", color: "black", mb: 2 }}>
+              Full refund up to 7 days prior
+            </Typography>
+            <Divider
+              sx={{ borderColor: "rgba(0, 0, 0, 0.1)", borderWidth: 1 }}
+            />
+          </Box>
+        </Grid>
+
+        {/* Right Column - 30% */}
+        <Grid item xs={12} md={4}>
+          {/* Combined Status and Cost Section */}
+          <Paper
+            sx={{
+              p: 2,
+              mb: 3,
+              maxWidth: "400px",
+              mx: "auto",
+              position: "sticky",
+              top: 88,
+              zIndex: 10,
+              bgcolor: 'background.paper',
+              boxShadow: (theme) => `0 2px 12px 0 ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)'}`,
+              '@media (max-width: 600px)': {
+                top: 72
+              }
+            }}
+          >
+            {/* Booking Status */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              mb: 2,
+              pb: 2,
+              borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
+            }}>
+              {getStatusDetails(booking?.status).icon}
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ 
+                  color: (theme) => theme.palette[getStatusDetails(booking?.status).color].main,
+                  fontSize: '0.95rem',
+                  lineHeight: 1.2
+                }}>
+                  {getStatusDetails(booking?.status).label}
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: 'text.secondary',
+                  fontSize: '0.85rem',
+                  mt: 0.5
+                }}>
+                  Submitted on {dayjs(booking?.createdAt).format("DD MMM YYYY at HH:mm")}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Total Cost Display */}
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ 
+                  mb: 0.75,
+                  color: 'text.secondary',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Estimated Cost
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  fontSize: '1.75rem',
+                  lineHeight: 1.2
+                }}
+              >
+                MYR {(() => {
+                  const hasFixedPrice = selectedPackage?.priceTiers.some(
+                    (tier) => tier.type === "FIXED"
+                  );
+
+                  const baseCost = selectedPackage
+                    ? hasFixedPrice
+                      ? selectedPackage.basePrice
+                      : selectedPackage.basePrice * (booking?.passengers || 0)
+                    : 0;
+
+                  const addOnsCost = booking?.addOns
+                    ? booking.addOns.reduce(
+                        (total, addon) => total + addon.price,
+                        0
+                      )
+                    : 0;
+
+                  return (baseCost + addOnsCost).toFixed(2);
+                })()}
+              </Typography>
+            </Box>
+
+            {/* Details Grid */}
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ 
+                  mb: 0.75,
+                  color: 'text.secondary',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Jetty Location
+              </Typography>
+              <Box
+                sx={{
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                  borderRadius: "6px",
+                  p: "6px 10px",
+                  minHeight: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  mb: 1.5,
+                  bgcolor: 'rgba(0, 0, 0, 0.02)',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {getJettyPointName(booking?.jettyPoint)}
+              </Box>
+
+              <Grid container spacing={1.5}>
+                <Grid item xs={6}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ 
+                      mb: 0.75,
+                      color: 'text.secondary',
+                      fontSize: '0.875rem',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    Date
+                  </Typography>
+                  <Box
+                    sx={{
+                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      borderRadius: "6px",
+                      p: "6px 10px",
+                      minHeight: "28px",
+                      display: "flex",
+                      alignItems: "center",
+                      bgcolor: 'rgba(0, 0, 0, 0.02)',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {formatDate(booking?.bookingDate)}
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ 
+                      mb: 0.75,
+                      color: 'text.secondary',
+                      fontSize: '0.875rem',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    Group Size
+                  </Typography>
+                  <Box
+                    sx={{
+                      border: "1px solid rgba(0, 0, 0, 0.08)",
+                      borderRadius: "6px",
+                      p: "6px 10px",
+                      minHeight: "28px",
+                      display: "flex",
+                      alignItems: "center",
+                      bgcolor: 'rgba(0, 0, 0, 0.02)',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {booking?.passengers} persons
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* Cost Breakdown */}
+            <Box sx={{ mb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontSize: '0.875rem' }}>
+                  Base Cost{" "}
+                  {(() => {
+                    const hasFixedPrice = selectedPackage?.priceTiers.some(
+                      (tier) => tier.type === "FIXED"
+                    );
+
+                    const baseCost = selectedPackage
+                      ? hasFixedPrice
+                        ? selectedPackage.basePrice
+                        : selectedPackage.basePrice * (booking?.passengers || 0)
+                      : 0;
+
+                    return booking?.passengers === 1 
+                      ? "(price starts)" 
+                      : `(${booking?.passengers} persons × RM${selectedPackage?.basePrice.toFixed(2)})`;
+                  })()}
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontSize: '0.875rem' }}>
+                  RM {(() => {
+                    const hasFixedPrice = selectedPackage?.priceTiers.some(
+                      (tier) => tier.type === "FIXED"
+                    );
+                    const baseCost = selectedPackage
+                      ? hasFixedPrice
+                        ? selectedPackage.basePrice
+                        : selectedPackage.basePrice * (booking?.passengers || 0)
+                      : 0;
+                    return baseCost.toFixed(2);
+                  })()}
+                </Typography>
+              </Box>
+              <Typography variant="subtitle2" sx={{ 
+                mb: 0.75,
+                fontSize: '0.875rem'
+              }}>
+                Add On:
+              </Typography>
+              {booking?.addOns && booking.addOns.length > 0 ? (
+                booking.addOns.map((addon) => (
+                  <Box
+                    key={addon.id}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 0.5,
+                      pl: 2,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                      {addon.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                      RM {addon.price.toFixed(2)}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography
+                  variant="body2"
+                  sx={{ pl: 2, color: "text.secondary", fontStyle: 'italic', fontSize: '0.875rem' }}
+                >
+                  None
+                </Typography>
+              )}
+            </Box>
+
+            <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+                  pt: 1.5,
+                  mb: 1,
+                }}
+              ></Box>
+
+            {/* Action Button */}
+            <Box sx={{ display: 'flex' }}>
+              {renderActionButton()}
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Dialogs and Snackbars - Keep these outside the grid */}
+      <BookingEditDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        bookingId={booking?.bookingId || ""}
+        onUpdate={handleBookingUpdate}
+      />
+      <CompletionDialog
+        open={showCompletionDialog}
+        onClose={handleCloseDialog}
+      />
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMessage(null)}
+        message={successMessage}
+      />
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        message={error}
+      />
+    </Container>
   );
 };
 
