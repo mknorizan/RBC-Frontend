@@ -27,12 +27,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ isCompact = false }) => {
   return (
     <Paper
       sx={{
-        p: isCompact ? "6px 12px" : "8px",
+        p: isCompact ? "6px 12px" : "12px",
         borderRadius: "40px",
         border: "1px solid black",
         width: isCompact ? "600px" : "750px",
         margin: "0 auto",
-        height: isCompact ? "40px" : "50px",
+        height: isCompact ? "40px" : "60px",
         display: "flex",
         alignItems: "center",
         transition: "all 0.3s ease-in-out",

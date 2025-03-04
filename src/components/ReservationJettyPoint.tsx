@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FormControl, InputLabel, Select, MenuItem, Box } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface JettyPoint {
   id: number;
@@ -21,30 +22,29 @@ const ReservationJettyPoint: React.FC<ReservationJettyPointProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchJettyPoints = async () => {
+      try {
+        const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.JETTY_POINTS));
+        const data = await response.json();
+        setJettyPoints(data);
+
+        // If no value is selected and Rhumuda point exists, select it
+        if (!value) {
+          const rhumudaPoint = data.find(
+            (point: JettyPoint) => point.id === 1 && point.isActive
+          );
+          if (rhumudaPoint) {
+            onChange(rhumudaPoint.id.toString());
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching jetty points:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchJettyPoints();
   }, []);
-
-  const fetchJettyPoints = async () => {
-    try {
-      const response = await fetch("http://localhost:8080/api/jetty-points");
-      const data = await response.json();
-      setJettyPoints(data);
-
-      // If no value is selected and Rhumuda point exists, select it
-      if (!value) {
-        const rhumudaPoint = data.find(
-          (point: JettyPoint) => point.id === 1 && point.isActive
-        );
-        if (rhumudaPoint) {
-          onChange(rhumudaPoint.id.toString());
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching jetty points:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Box sx={{ minWidth: 200 }}>

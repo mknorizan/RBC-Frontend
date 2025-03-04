@@ -28,6 +28,7 @@ import {
   Snackbar,
   Alert,
   ListSubheader,
+  FormHelperText
 } from "@mui/material";
 import {
   AdapterDayjs
@@ -39,6 +40,8 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GroupIcon from "@mui/icons-material/Group";
 import PaidIcon from "@mui/icons-material/Paid";
 import CheckIcon from "@mui/icons-material/Check";
+
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface BookingEditDialogProps {
   open: boolean;
@@ -58,6 +61,7 @@ interface AddOn {
   name: string;
   price: number;
   isActive: boolean;
+  perPerson: boolean;
 }
 
 function TabPanel(props: TabPanelProps) {
@@ -83,6 +87,24 @@ function a11yProps(index: number) {
   };
 }
 
+interface ValidationErrors {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  addressLine1: string;
+  postalCode: string;
+  city: string;
+  country: string;
+}
+
+interface ReservationValidationErrors {
+  jettyPoint: string;
+  bookingDate: string;
+  passengers: string;
+  packageId: string;
+}
+
 const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
   open,
   onClose,
@@ -97,59 +119,117 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
   const [packages, setPackages] = useState<any[]>([]);
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [saving, setSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    email: "",
+    addressLine1: "",
+    postalCode: "",
+    city: "",
+    country: "",
+  });
+  const [reservationValidationErrors, setReservationValidationErrors] = useState<ReservationValidationErrors>({
+    jettyPoint: "",
+    bookingDate: "",
+    passengers: "",
+    packageId: "",
+  });
 
-  // Fetch booking data when dialog opens
-  useEffect(() => {
-    if (open && bookingId) {
-      fetchBookingData();
+  const validateName = (name: string): string => {
+    if (!name) return "This field is required";
+    if (name.length < 2) return "Must be at least 2 characters";
+    if (!/^[a-zA-Z\s]*$/.test(name)) return "Only letters and spaces allowed";
+    return "";
+  };
+
+  const validatePhoneNumber = (phone: string): string => {
+    if (!phone) return "This field is required";
+    const cleanPhone = phone.replace(/\s/g, "");
+    const phoneRegex = /^(\+?60|0)\d{9,10}$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      return "Invalid format. Use +601234567890 or 01234567890";
     }
-  }, [open, bookingId]);
+    return "";
+  };
 
-  const fetchBookingData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Fetch all required data in parallel
-      const [bookingResponse, jettyResponse, packagesResponses, addOnsResponse] = await Promise.all([
-        fetch(`http://localhost:8080/api/bookings/${bookingId}`),
-        fetch("http://localhost:8080/api/jetty-points"),
-        Promise.all([
-          fetch("http://localhost:8080/api/packages/category/1"),
-          fetch("http://localhost:8080/api/packages/category/2"),
-          fetch("http://localhost:8080/api/packages/category/3"),
-        ]),
-        fetch("http://localhost:8080/api/addons")
-      ]);
-
-      const bookingData = await bookingResponse.json();
-      const jettyData = await jettyResponse.json();
-      const packagesData = (await Promise.all(packagesResponses.map(r => r.json()))).flat();
-      const addOnsData = await addOnsResponse.json();
-
-      setFormData(bookingData);
-      setJettyPoints(jettyData);
-      setPackages(packagesData);
-      setAddOns(addOnsData);
-    } catch (err) {
-      setError("Failed to load booking data. Please try again.");
-      console.error("Error fetching booking data:", err);
-    } finally {
-      setLoading(false);
+  const validateEmail = (email: string): string => {
+    if (!email) return "This field is required";
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return "Invalid email address";
     }
+    return "";
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const validateAddressLine1 = (address: string): string => {
+    if (!address) return "This field is required";
+    if (address.length < 5) return "Address must be at least 5 characters long";
+    return "";
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const validatePostalCode = (postalCode: string): string => {
+    if (!postalCode) return "This field is required";
+    const postalCodeRegex = /^\d{5}$/;
+    if (!postalCodeRegex.test(postalCode)) {
+      return "Invalid format. Must be 5 digits (e.g., 12345)";
+    }
+    return "";
   };
 
-  const handleSubmit = async () => {
+  const validateCity = (city: string): string => {
+    if (!city) return "This field is required";
+    if (city.length < 2) return "Must be at least 2 characters";
+    if (!/^[a-zA-Z\s]*$/.test(city)) return "Only letters and spaces allowed";
+    return "";
+  };
+
+  const validateCountry = (country: string): string => {
+    if (!country) return "This field is required";
+    if (country.length < 2) return "Must be at least 2 characters";
+    if (!/^[a-zA-Z\s]*$/.test(country)) return "Only letters and spaces allowed";
+    return "";
+  };
+
+  const validateReservationDetails = (): boolean => {
+    const errors: ReservationValidationErrors = {
+      jettyPoint: !formData.jettyPoint?.id ? "Please select a jetty point" : "",
+      bookingDate: !formData.bookingDate ? "Please select a booking date" : "",
+      passengers: !formData.passengers ? "Please enter number of passengers" : 
+                 formData.passengers < 1 ? "Must have at least 1 passenger" : 
+                 formData.passengers > formData.packageDetails?.maxCapacity ? `Maximum ${formData.packageDetails?.maxCapacity} passengers allowed` : "",
+      packageId: !formData.packageDetails?.id ? "Please select a package" : "",
+    };
+
+    setReservationValidationErrors(errors);
+    return !Object.values(errors).some(error => error !== "");
+  };
+
+  const validateForm = (): boolean => {
+    if (activeTab === 0) {
+      const errors: ValidationErrors = {
+        firstName: validateName(formData.firstName),
+        lastName: validateName(formData.lastName),
+        phoneNumber: validatePhoneNumber(formData.phoneNumber),
+        email: validateEmail(formData.email),
+        addressLine1: validateAddressLine1(formData.addressLine1),
+        postalCode: validatePostalCode(formData.postalCode),
+        city: validateCity(formData.city),
+        country: validateCountry(formData.country),
+      };
+
+      setValidationErrors(errors);
+      return !Object.values(errors).some(error => error !== "");
+    } else if (activeTab === 1) {
+      return validateReservationDetails();
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
     setSaving(true);
     setError(null);
     
@@ -192,7 +272,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
       // Log the prepared update data
       console.log("Sending update data:", updateData);
 
-      const response = await fetch(`http://localhost:8080/api/bookings/${bookingId}`, {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.BOOKINGS), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -220,6 +300,57 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  // Fetch booking data when dialog opens
+  useEffect(() => {
+    if (open && bookingId) {
+      fetchBookingData();
+    }
+  }, [open, bookingId]);
+
+  const fetchBookingData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch all required data in parallel
+      const [bookingResponse, jettyResponse, packagesResponses, addOnsResponse] = await Promise.all([
+        fetch(getApiUrl(API_CONFIG.ENDPOINTS.BOOKINGS) + `/${bookingId}`),
+        fetch(getApiUrl(API_CONFIG.ENDPOINTS.JETTY_POINTS)),
+        Promise.all([
+          fetch(getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES, { categoryId: 1 })),
+          fetch(getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES, { categoryId: 2 })),
+          fetch(getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES, { categoryId: 3 })),
+        ]),
+        fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADD_ONS))
+      ]);
+
+      const bookingData = await bookingResponse.json();
+      const jettyData = await jettyResponse.json();
+      const packagesData = (await Promise.all(packagesResponses.map(r => r.json()))).flat();
+      const addOnsData = await addOnsResponse.json();
+
+      setFormData(bookingData);
+      setJettyPoints(jettyData);
+      setPackages(packagesData);
+      setAddOns(addOnsData);
+    } catch (err) {
+      setError("Failed to load booking data. Please try again.");
+      console.error("Error fetching booking data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   // Handle dialog close
@@ -285,6 +416,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="First Name"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  error={!!validationErrors.firstName}
+                  helperText={validationErrors.firstName}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -293,6 +426,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="Last Name"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  error={!!validationErrors.lastName}
+                  helperText={validationErrors.lastName}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -301,6 +436,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="Email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
+                  error={!!validationErrors.email}
+                  helperText={validationErrors.email}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -309,6 +446,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="Phone Number"
                   value={formData.phoneNumber}
                   onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                  error={!!validationErrors.phoneNumber}
+                  helperText={validationErrors.phoneNumber}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -317,6 +456,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="Address Line 1"
                   value={formData.addressLine1}
                   onChange={(e) => handleInputChange("addressLine1", e.target.value)}
+                  error={!!validationErrors.addressLine1}
+                  helperText={validationErrors.addressLine1}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -333,6 +474,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="Postal Code"
                   value={formData.postalCode}
                   onChange={(e) => handleInputChange("postalCode", e.target.value)}
+                  error={!!validationErrors.postalCode}
+                  helperText={validationErrors.postalCode}
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
@@ -341,6 +484,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="City"
                   value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
+                  error={!!validationErrors.city}
+                  helperText={validationErrors.city}
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
@@ -349,6 +494,8 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   label="Country"
                   value={formData.country}
                   onChange={(e) => handleInputChange("country", e.target.value)}
+                  error={!!validationErrors.country}
+                  helperText={validationErrors.country}
                 />
               </Grid>
             </Grid>
@@ -358,9 +505,11 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
           <TabPanel value={activeTab} index={1}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Jetty Point</InputLabel>
+                <FormControl fullWidth variant="outlined" error={!!reservationValidationErrors.jettyPoint}>
+                  <InputLabel id="jetty-point-label">Jetty Point</InputLabel>
                   <Select
+                    labelId="jetty-point-label"
+                    label="Jetty Point"
                     value={formData.jettyPoint.id.toString()}
                     onChange={(e: any) =>
                       handleInputChange("jettyPoint", {
@@ -375,6 +524,9 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                       </MenuItem>
                     ))}
                   </Select>
+                  {reservationValidationErrors.jettyPoint && (
+                    <FormHelperText>{reservationValidationErrors.jettyPoint}</FormHelperText>
+                  )}
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -389,6 +541,12 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                       )
                     }
                     sx={{ width: "100%" }}
+                    slotProps={{
+                      textField: {
+                        error: !!reservationValidationErrors.bookingDate,
+                        helperText: reservationValidationErrors.bookingDate
+                      }
+                    }}
                   />
                 </LocalizationProvider>
               </Grid>
@@ -402,12 +560,16 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                     handleInputChange("passengers", parseInt(e.target.value))
                   }
                   InputProps={{ inputProps: { min: 1 } }}
+                  error={!!reservationValidationErrors.passengers}
+                  helperText={reservationValidationErrors.passengers}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Package</InputLabel>
+                <FormControl fullWidth variant="outlined" error={!!reservationValidationErrors.packageId}>
+                  <InputLabel id="package-label">Package</InputLabel>
                   <Select
+                    labelId="package-label"
+                    label="Package"
                     value={formData.packageDetails.id.toString()}
                     onChange={(e: any) => {
                       const selectedPackage = packages.find(p => p.id.toString() === e.target.value);
@@ -493,6 +655,9 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                         </MenuItem>
                     ))}
                   </Select>
+                  {reservationValidationErrors.packageId && (
+                    <FormHelperText>{reservationValidationErrors.packageId}</FormHelperText>
+                  )}
                 </FormControl>
               </Grid>
 
@@ -551,26 +716,35 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                   Add-ons
                 </Typography>
                 <FormGroup>
-                  {addOns.map((addon) => (
-                    <FormControlLabel
-                      key={addon.id}
-                      control={
-                        <Checkbox
-                          checked={formData.addOns.some((a: any) => a.id === addon.id)}
-                          onChange={(e) => {
-                            const isChecked = e.target.checked;
-                            setFormData((prev: any) => ({
-                              ...prev,
-                              addOns: isChecked
-                                ? [...prev.addOns, { id: addon.id, name: addon.name, price: addon.price }]
-                                : prev.addOns.filter((a: any) => a.id !== addon.id),
-                            }));
-                          }}
-                        />
+                  {[...addOns]
+                    .sort((a, b) => {
+                      // Sort by perPerson (false comes first)
+                      if (a.perPerson !== b.perPerson) {
+                        return a.perPerson ? 1 : -1;
                       }
-                      label={`${addon.name} (RM${addon.price})`}
-                    />
-                  ))}
+                      // If both have same perPerson value, sort by name
+                      return a.name.localeCompare(b.name);
+                    })
+                    .map((addon) => (
+                      <FormControlLabel
+                        key={addon.id}
+                        control={
+                          <Checkbox
+                            checked={formData.addOns.some((a: any) => a.id === addon.id)}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              setFormData((prev: any) => ({
+                                ...prev,
+                                addOns: isChecked
+                                  ? [...prev.addOns, { id: addon.id, name: addon.name, price: addon.price, perPerson: addon.perPerson }]
+                                  : prev.addOns.filter((a: any) => a.id !== addon.id),
+                              }));
+                            }}
+                          />
+                        }
+                        label={`${addon.name}${addon.perPerson ? ' (RM10/pax)' : ' (RM10)'}`}
+                      />
+                    ))}
                 </FormGroup>
               </Grid>
             </Grid>
@@ -625,7 +799,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
         <DialogActions>
           <Button onClick={onClose} disabled={saving}>Cancel</Button>
           <Button 
-            onClick={handleSubmit} 
+            onClick={handleSave} 
             variant="contained" 
             disabled={saving}
             startIcon={saving ? <CircularProgress size={20} /> : null}

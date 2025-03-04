@@ -12,6 +12,7 @@ import SummaryPage from "./pages/SummaryPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import ContactUsPage from "./pages/ContactUsPage";
 import ServicesPage from "./pages/ServicesPage";
+import ComingSoonPage from "./pages/ComingSoonPage";
 
 const router = createBrowserRouter([
   {
@@ -87,6 +88,17 @@ const router = createBrowserRouter([
         <Header />
         <Layout>
           <TestPage />
+        </Layout>
+      </>
+    ),
+  },
+  {
+    path: "/coming-soon",
+    element: (
+      <>
+        <Header />
+        <Layout>
+          <ComingSoonPage />
         </Layout>
       </>
     ),

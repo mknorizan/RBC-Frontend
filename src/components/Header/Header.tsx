@@ -105,6 +105,7 @@ const Header: React.FC = () => {
                 alignItems: "center",
                 gap: 2,
                 flex: 1,
+                position: "relative"
               }}
             >
               <Box
@@ -122,9 +123,12 @@ const Header: React.FC = () => {
               {isScrolled && isSearchVisible && (
                 <Box
                   sx={{
-                    flex: 1,
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "100%",
                     maxWidth: "600px",
-                    marginLeft: 0,
+                    zIndex: 1
                   }}
                 >
                   <SearchBar isCompact={true} />
@@ -136,6 +140,7 @@ const Header: React.FC = () => {
                 <>
                   <Button
                     color="inherit"
+                    onClick={() => navigate('/coming-soon')}
                     sx={{
                       color: "black",
                       textTransform: "none",
@@ -204,7 +209,7 @@ const Header: React.FC = () => {
               >
                 {isScrolled && (
                   <>
-                    <MenuItem onClick={() => handleNavigation("/list-boat")}>
+                    <MenuItem onClick={() => navigate('/coming-soon')}>
                       List your Boat
                     </MenuItem>
                     <MenuItem onClick={handleOpenBookingDialog}>

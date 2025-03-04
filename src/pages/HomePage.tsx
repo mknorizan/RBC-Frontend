@@ -21,6 +21,7 @@ import { Package } from "../types/package";
 import PackageCard from "../components/PackageCard/PackageCard";
 import FishingCategoryHeader from "../components/FishingCategoryHeader";
 import { Helmet } from 'react-helmet-async';
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 const ServicesSection = () => {
   const services = [
@@ -154,11 +155,11 @@ const HomePage: React.FC = () => {
   const handleCategorySelect = async (category: string) => {
     setSelectedCategory(category);
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/package-categories/${
-          category === "boat" ? 1 : category === "island" ? 2 : 3
-        }`
-      );
+      const categoryId = category === "fishing" ? 3 : category === "island" ? 2 : 1;
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES) + `/category/${categoryId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setCategoryName(data.name);
     } catch (err) {
@@ -187,9 +188,7 @@ const HomePage: React.FC = () => {
             : selectedCategory === "island"
             ? 2
             : 3;
-        const response = await fetch(
-          `http://localhost:8080/api/packages/category/${categoryId}`
-        );
+        const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES, { categoryId }));
         const data = (await response.json()) as Package[];
 
         // Sort packages if it's fishing category
@@ -220,9 +219,20 @@ const HomePage: React.FC = () => {
           {deepSeaPackages.length > 0 && (
             <Box>
               <FishingCategoryHeader type="DEEP_SEA" />
-              <Grid container spacing={3}>
+              <Grid 
+                container 
+                spacing={0}
+                sx={{
+                  m: 0,
+                  width: '100%',
+                  '& > .MuiGrid-item': {
+                    p: 0,
+                    width: 'auto'
+                  }
+                }}
+              >
                 {deepSeaPackages.map((pkg) => (
-                  <Grid item xs={12} sm={6} md={4} key={pkg.id}>
+                  <Grid item key={pkg.id}>
                     <PackageCard {...pkg} />
                   </Grid>
                 ))}
@@ -233,9 +243,20 @@ const HomePage: React.FC = () => {
           {squidPackages.length > 0 && (
             <Box>
               <FishingCategoryHeader type="SQUID" />
-              <Grid container spacing={3}>
+              <Grid 
+                container 
+                spacing={0}
+                sx={{
+                  m: 0,
+                  width: '100%',
+                  '& > .MuiGrid-item': {
+                    p: 0,
+                    width: 'auto'
+                  }
+                }}
+              >
                 {squidPackages.map((pkg) => (
-                  <Grid item xs={12} sm={6} md={4} key={pkg.id}>
+                  <Grid item key={pkg.id}>
                     <PackageCard {...pkg} />
                   </Grid>
                 ))}
@@ -247,13 +268,26 @@ const HomePage: React.FC = () => {
     }
 
     return (
-      <Grid container spacing={3}>
-        {packages.map((pkg) => (
-          <Grid item xs={12} sm={6} md={4} key={pkg.id}>
-            <PackageCard {...pkg} />
-          </Grid>
-        ))}
-      </Grid>
+      <Box sx={{ mt: 2 }}>
+        <Grid 
+          container 
+          spacing={0}
+          sx={{
+            m: 0,
+            width: '100%',
+            '& > .MuiGrid-item': {
+              p: 0,
+              width: 'auto'
+            }
+          }}
+        >
+          {packages.map((pkg) => (
+            <Grid item key={pkg.id}>
+              <PackageCard {...pkg} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
     );
   };
 

@@ -6,8 +6,10 @@ import {
   DialogActions,
   Typography,
   Button,
+  Box,
 } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import completeImg from "../assets/images/complete-img.png";
 
 interface CompletionDialogProps {
   open: boolean;
@@ -49,24 +51,47 @@ const CompletionDialog: React.FC<CompletionDialogProps> = ({
       </DialogTitle>
       <DialogContent sx={{ mt: 2, pb: 3 }}>
         <Typography variant="body1" gutterBottom>
-          Thank you for your inquiry! We have sent a confirmation email to your
-          registered email address.
+          Thank you for your inquiry! We have sent a confirmation email to your registered email address.
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Please check your inbox (and spam folder) for the confirmation email.
-          Our team will review your inquiry and get back to you shortly.
-        </Typography>
-      </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button
-          variant="contained"
-          onClick={handleClose}
-          sx={{
-            bgcolor: "#0384BD",
-            "&:hover": { bgcolor: "rgba(3, 132, 189, 0.9)" },
+
+        <Box 
+          sx={{ 
+            my: 2,
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%'
           }}
         >
-          Close
+          <Box
+            component="img"
+            src={completeImg}
+            alt="Inquiry Complete"
+            sx={{
+              width: '100%',
+              height: 'auto',
+              maxHeight: '200px',
+              objectFit: 'cover',
+              borderRadius: 1
+            }}
+          />
+        </Box>
+
+        <Typography variant="body1">
+          Please check your inbox (and spam folder) for the confirmation email. Our team will review your inquiry and get back to you shortly.
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          onClick={handleClose}
+          variant="contained"
+          sx={{
+            bgcolor: "#0384BD",
+            "&:hover": {
+              bgcolor: "#026994",
+            },
+          }}
+        >
+          CLOSE
         </Button>
       </DialogActions>
     </Dialog>

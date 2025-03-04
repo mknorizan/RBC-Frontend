@@ -98,6 +98,7 @@ const PackageCard: React.FC<Package> = ({
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
+        mr: 2
       }}
     >
       <Box sx={{ flex: "0 0 auto" }}>

@@ -6,6 +6,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface AddOn {
   id: number;
@@ -13,16 +14,19 @@ interface AddOn {
   description: string;
   price: number;
   isActive: boolean;
+  perPerson: boolean;
 }
 
 interface AddOnSelectionProps {
   selectedAddOns: string[];
   onAddOnChange: (addOnId: string) => void;
+  passengers: number;
 }
 
 const AddOnSelection: React.FC<AddOnSelectionProps> = ({
   selectedAddOns,
   onAddOnChange,
+  passengers,
 }) => {
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +34,10 @@ const AddOnSelection: React.FC<AddOnSelectionProps> = ({
   useEffect(() => {
     const fetchAddOns = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/addons");
-        if (!response.ok) throw new Error("Failed to fetch add-ons");
+        const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADD_ONS));
+        if (!response.ok) {
+          throw new Error("Failed to fetch add-ons");
+        }
         const data = await response.json();
         setAddOns(data);
       } catch (error) {
@@ -47,24 +53,37 @@ const AddOnSelection: React.FC<AddOnSelectionProps> = ({
     return <Typography color="error">{error}</Typography>;
   }
 
+  const getAddOnPriceLabel = (addon: AddOn) => {
+    return `${addon.name}${addon.perPerson ? ' (RM10/pax)' : ' (RM10)'}`;
+  };
+
   return (
     <Box>
       <Typography variant="subtitle1" sx={{ mb: 2 }}>
         Add-ons
       </Typography>
       <FormGroup>
-        {addOns.map((addon) => (
-          <FormControlLabel
-            key={addon.id}
-            control={
-              <Checkbox
-                checked={selectedAddOns.includes(addon.id.toString())}
-                onChange={() => onAddOnChange(addon.id.toString())}
-              />
+        {[...addOns]
+          .sort((a, b) => {
+            // Sort by perPerson (false comes first)
+            if (a.perPerson !== b.perPerson) {
+              return a.perPerson ? 1 : -1;
             }
-            label={`${addon.name} (RM${addon.price})`}
-          />
-        ))}
+            // If both have same perPerson value, sort by name
+            return a.name.localeCompare(b.name);
+          })
+          .map((addon) => (
+            <FormControlLabel
+              key={addon.id}
+              control={
+                <Checkbox
+                  checked={selectedAddOns.includes(addon.id.toString())}
+                  onChange={() => onAddOnChange(addon.id.toString())}
+                />
+              }
+              label={getAddOnPriceLabel(addon)}
+            />
+          ))}
       </FormGroup>
     </Box>
   );

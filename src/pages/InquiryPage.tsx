@@ -27,6 +27,8 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GroupsIcon from "@mui/icons-material/Groups";
 import PaidIcon from "@mui/icons-material/Paid";
 import DirectionsBoatIcon from "@mui/icons-material/DirectionsBoat";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import InfoIcon from "@mui/icons-material/Info";
 import { useLocation, useNavigate } from "react-router-dom";
 import JettyPointDropdown from "../components/JettyPointDropdown";
 import BookingDatePicker from "../components/BookingDatePicker";
@@ -41,6 +43,7 @@ import ReservationPassengers from "../components/ReservationPassengers";
 import { BOOKING_SELECTION_KEY, BookingSelection } from "../types/booking";
 // import Description from "../components/Description";
 import { Helmet } from 'react-helmet-async';
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface CustomerInfo {
   firstName: string;
@@ -92,9 +95,9 @@ interface ReservationValidationErrors {
 interface AddOn {
   id: number;
   name: string;
-  // description: string | null;
   price: number;
   isActive: boolean;
+  perPerson: boolean;  // indicates if the price should be multiplied by number of passengers
 }
 
 interface IncludedService {
@@ -225,7 +228,7 @@ const InquiryPage: React.FC = () => {
   useEffect(() => {
     const fetchAddOns = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/addons");
+        const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADD_ONS));
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -244,7 +247,9 @@ const InquiryPage: React.FC = () => {
     const fetchPackages = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/packages/category/${selectedCategory}`
+          getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES, {
+            categoryId: selectedCategory,
+          })
         );
         const data = await response.json();
         console.log("Raw Package Data:", data);
@@ -710,7 +715,7 @@ const InquiryPage: React.FC = () => {
 
       console.log("Sending booking data:", bookingData);
 
-      const response = await fetch("http://localhost:8080/api/bookings", {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.BOOKINGS), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -738,6 +743,7 @@ const InquiryPage: React.FC = () => {
 
   const renderButtons = () => (
     <Box sx={{ mt: 3, display: "flex", justifyContent: "space-between" }}>
+      {/* Clear button commented out
       <Button
         variant="outlined"
         onClick={handleClearClick}
@@ -752,6 +758,8 @@ const InquiryPage: React.FC = () => {
       >
         Clear
       </Button>
+      */}
+      <div /> {/* Empty div to maintain spacing */}
       <Box sx={{ display: "flex", gap: 2 }}>
         {activeSection > 0 && (
           <Button
@@ -951,25 +959,21 @@ const InquiryPage: React.FC = () => {
           p: 3,
           border: "1px solid #e0e0e0",
           borderRadius: 2,
-          bgcolor: "#f8f8f8",
+          bgcolor: "#E5F6FD",
           mb: 3,
+          color: "#014361"
         }}
       >
         <Typography variant="h6" sx={{ mb: 2 }}>
-          Package Info
+          <Stack direction="row" spacing={1} alignItems="center">
+            <InfoIcon sx={{ color: "#0384BD", fontSize: 24 }} />
+            <span>Package Info</span>
+          </Stack>
         </Typography>
 
         <Grid container spacing={3}>
-          {/* Package Name and Description */}
-          {/* <Grid item xs={12}> */}
-          {/* <Typography variant="subtitle1" fontWeight={500}>
-              {selectedPackage.name}
-            </Typography>
-            <Description text={selectedPackage.description} /> */}
-          {/* </Grid> */}
-
           {/* Duration, Capacity, and Distance */}
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={4}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <AccessTimeIcon sx={{ color: "#0384BD", fontSize: 20 }} />
@@ -999,41 +1003,58 @@ const InquiryPage: React.FC = () => {
           </Grid>
 
           {/* Price Tiers */}
-          <Grid item xs={12} sm={6}>
+          <Grid item xs={12} sm={4}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <PaidIcon sx={{ color: "#0384BD", fontSize: 20 }} />
-                <Stack>
-                  {selectedPackage.priceTiers.map((tier) => (
-                    <Typography key={tier.id} variant="body2">
-                      {tier.price === 0 ? "FREE" : `RM${tier.price}`} |{" "}
-                      {tier.type}
-                    </Typography>
-                  ))}
-                </Stack>
+                <Typography variant="body2">Pricing:</Typography>
+              </Stack>
+              <Stack spacing={0.5} sx={{ pl: 3.5 }}>
+                {selectedPackage.priceTiers.map((tier) => (
+                  <Typography
+                    key={tier.id}
+                    variant="body2"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: tier.price === 0 ? '#00C853' : 'inherit',
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {tier.price === 0 ? 'FREE' : `RM${tier.price}`} | {tier.label || tier.type}
+                  </Typography>
+                ))}
               </Stack>
             </Stack>
           </Grid>
 
-          {/* Included Services */}
-          {selectedPackage.services && selectedPackage.services.length > 0 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Services Included:
-              </Typography>
-              <Stack spacing={0.5}>
+          {/* Services Included */}
+          <Grid item xs={12} sm={4}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CheckCircleIcon sx={{ color: "#0384BD", fontSize: 20 }} />
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Services Included:
+                </Typography>
+              </Stack>
+              <Stack spacing={0.5} sx={{ pl: 3.5 }}>
                 {selectedPackage.services.map((service) => (
                   <Typography
                     key={service.id}
                     variant="body2"
-                    color="text.secondary"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      lineHeight: 1.2,
+                      fontWeight: 500
+                    }}
                   >
                     {service.name || service.serviceName}
                   </Typography>
                 ))}
               </Stack>
-            </Grid>
-          )}
+            </Stack>
+          </Grid>
         </Grid>
       </Box>
     );
@@ -1116,6 +1137,7 @@ const InquiryPage: React.FC = () => {
           <AddOnSelection
             selectedAddOns={reservationDetails.addOns}
             onAddOnChange={handleAddOnChange}
+            passengers={reservationDetails.passengers}
           />
         </Grid>
       </Grid>

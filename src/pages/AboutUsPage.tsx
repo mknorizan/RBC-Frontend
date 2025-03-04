@@ -16,16 +16,16 @@ const AboutUsPage: React.FC = () => {
           <Grid item xs={12} md={8}>
             <Box>
               {/* About Us Section */}
-              <Typography variant="h3" component="h1" sx={{ mb: 4, color: '#2C3E50', fontWeight: 500 }}>
+              <Typography variant="h4" component="h1" sx={{ mb: 2, color: '#2C3E50', fontWeight: 500 }}>
                 About Us
               </Typography>
 
               <Box sx={{ mb: 6 }}>
-                <Typography variant="h5" component="h2" sx={{ mb: 2, color: '#34495E', fontWeight: 500 }}>
+                {/* <Typography variant="h5" component="h2" sx={{ mb: 2, color: '#34495E', fontWeight: 500 }}>
                   RhuMuda Boat Charter
-                </Typography>
+                </Typography> */}
                 <Typography variant="body1" sx={{ mb: 2, color: '#2C3E50', lineHeight: 1.8 }}>
-                  - is your premier destination for unforgettable marine adventures. We're passionate about the sea 
+                  Rhumuda Boat Charter is your premier destination for unforgettable marine adventures. We're passionate about the sea 
                   and committed to providing exceptional boating experiences. Our fleet of well-maintained boats, 
                   coupled with our experienced and friendly crew, ensures a safe and enjoyable journey.
                 </Typography>
@@ -64,43 +64,43 @@ const AboutUsPage: React.FC = () => {
 
               {/* Why Choose Us Section */}
               <Box>
-                <Typography variant="h4" component="h2" sx={{ mb: 4, color: '#2C3E50', fontWeight: 500 }}>
+                <Typography variant="h4" component="h1" sx={{ mb: 2, color: '#2C3E50', fontWeight: 500 }}>
                   Why Choose Us?
                 </Typography>
 
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 1 }}>
                   <Typography variant="h6" component="h3" sx={{ color: '#34495E', fontWeight: 500 }}>
                     Expert Captains
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#2C3E50', lineHeight: 1.8 }}>
-                    - Our skilled captains know the waters like the back of their hands.
+                    • Our skilled captains know the waters like the back of their hands.
                   </Typography>
                 </Box>
 
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 1 }}>
                   <Typography variant="h6" component="h3" sx={{ color: '#34495E', fontWeight: 500 }}>
                     Modern Fleet
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#2C3E50', lineHeight: 1.8 }}>
-                    - Our boats are meticulously maintained boats offers a range of options to suit every need.
+                    • Our boats are meticulously maintained boats offers a range of options to suit every need.
                   </Typography>
                 </Box>
 
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 1 }}>
                   <Typography variant="h6" component="h3" sx={{ color: '#34495E', fontWeight: 500 }}>
                     Personalized Service
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#2C3E50', lineHeight: 1.8 }}>
-                    - We tailor each trip to your specific needs and preferences.
+                    • We tailor each trip to your specific needs and preferences.
                   </Typography>
                 </Box>
 
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 1 }}>
                   <Typography variant="h6" component="h3" sx={{ color: '#34495E', fontWeight: 500 }}>
                     Unmatched Safety
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#2C3E50', lineHeight: 1.8 }}>
-                    - Your safety is our top priority.
+                    • Your safety is our top priority.
                   </Typography>
                 </Box>
               </Box>

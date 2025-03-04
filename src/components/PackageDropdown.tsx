@@ -6,6 +6,7 @@ import {
   MenuItem,
   FormHelperText,
 } from "@mui/material";
+import { API_CONFIG, getApiUrl } from "../config/api";
 
 interface Package {
   id: number;
@@ -38,7 +39,7 @@ const PackageDropdown: React.FC<PackageDropdownProps> = ({
     const fetchPackages = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/api/packages/category/${categoryId}`
+          getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES) + `/category/${categoryId}`
         );
         const text = await response.text();
         if (text.trim() === "") {
