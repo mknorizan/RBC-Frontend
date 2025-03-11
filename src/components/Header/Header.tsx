@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -22,6 +22,19 @@ import logo from "../../assets/images/logo-rhumuda.PNG";
 import SearchBar from "../SearchBar/SearchBar";
 import { SYSTEM_PADDING } from "../../constants/layout";
 
+// Debounce function with a longer wait time to prevent rapid state changes
+const debounce = (func: Function, wait: number) => {
+  let timeout: ReturnType<typeof setTimeout>;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,15 +47,24 @@ const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const open = Boolean(anchorEl);
 
-  useEffect(() => {
-    const handleScroll = () => {
+  // Use debounced scroll handler with hysteresis to prevent flickering
+  const handleScroll = useCallback(
+    debounce(() => {
       const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 20);
-    };
+      // Add hysteresis: different thresholds for scrolling up vs down
+      if (!isScrolled && scrollPosition > 30) {
+        setIsScrolled(true);
+      } else if (isScrolled && scrollPosition < 10) {
+        setIsScrolled(false);
+      }
+    }, 50), // Increased debounce time for smoother transitions
+    [isScrolled] // Include isScrolled in dependencies for hysteresis
+  );
 
+  useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [handleScroll]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -105,7 +127,7 @@ const Header: React.FC = () => {
                 alignItems: "center",
                 gap: 2,
                 flex: 1,
-                position: "relative"
+                position: "relative",
               }}
             >
               <Box
@@ -120,7 +142,9 @@ const Header: React.FC = () => {
                   transition: "all 0.3s ease-in-out",
                 }}
               />
-              {isScrolled && isSearchVisible && (
+
+              {/* Compact SearchBar in header when scrolled */}
+              {isSearchVisible && isScrolled && (
                 <Box
                   sx={{
                     position: "absolute",
@@ -128,7 +152,8 @@ const Header: React.FC = () => {
                     transform: "translateX(-50%)",
                     width: "100%",
                     maxWidth: "600px",
-                    zIndex: 1
+                    zIndex: 1,
+                    transition: "all 0.3s ease-in-out",
                   }}
                 >
                   <SearchBar isCompact={true} />
@@ -140,7 +165,7 @@ const Header: React.FC = () => {
                 <>
                   <Button
                     color="inherit"
-                    onClick={() => navigate('/coming-soon')}
+                    onClick={() => navigate("/coming-soon")}
                     sx={{
                       color: "black",
                       textTransform: "none",
@@ -148,8 +173,8 @@ const Header: React.FC = () => {
                       transition: "color 0.2s ease-in-out",
                       "&:hover": {
                         color: "#0384BD",
-                        backgroundColor: "transparent"
-                      }
+                        backgroundColor: "transparent",
+                      },
                     }}
                   >
                     List your Boat
@@ -163,8 +188,8 @@ const Header: React.FC = () => {
                       transition: "color 0.2s ease-in-out",
                       "&:hover": {
                         color: "#0384BD",
-                        backgroundColor: "transparent"
-                      }
+                        backgroundColor: "transparent",
+                      },
                     }}
                     onClick={handleOpenBookingDialog}
                   >
@@ -199,8 +224,8 @@ const Header: React.FC = () => {
                       transition: "color 0.2s ease-in-out",
                       "&:hover": {
                         color: "#0384BD",
-                        backgroundColor: "transparent"
-                      }
+                        backgroundColor: "transparent",
+                      },
                     },
                   },
                 }}
@@ -209,7 +234,7 @@ const Header: React.FC = () => {
               >
                 {isScrolled && (
                   <>
-                    <MenuItem onClick={() => navigate('/coming-soon')}>
+                    <MenuItem onClick={() => navigate("/coming-soon")}>
                       List your Boat
                     </MenuItem>
                     <MenuItem onClick={handleOpenBookingDialog}>
@@ -230,8 +255,17 @@ const Header: React.FC = () => {
               </Menu>
             </Box>
           </Toolbar>
+
+          {/* Full-size SearchBar below the toolbar when not scrolled */}
           {isSearchVisible && !isScrolled && (
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mb: 3,
+                transition: "all 0.3s ease-in-out",
+              }}
+            >
               <SearchBar isCompact={false} />
             </Box>
           )}
