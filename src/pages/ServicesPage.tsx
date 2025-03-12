@@ -36,6 +36,9 @@ import daytrip2 from "../assets/services/day-trip/daytrip2.jpg";
 import daytrip3 from "../assets/services/day-trip/daytrip3.jpg";
 import daytrip4 from "../assets/services/day-trip/daytrip4.jpg";
 
+// Define the blue color to match SearchBar
+const RHUMUDA_BLUE = "#0384BD";
+
 type ServiceKey =
   | "Private Boat"
   | "Round Island"
@@ -238,14 +241,14 @@ const ServiceContent2 = ({ service }: { service: ServiceContent }) => {
       <Grid container spacing={4} sx={{ mt: 2 }}>
         {/* Features */}
         <Grid item xs={12} md={service.images ? 6 : 12}>
-          <Typography variant="h6" gutterBottom sx={{ color: "#06FB07" }}>
+          <Typography variant="h6" gutterBottom sx={{ color: RHUMUDA_BLUE }}>
             What We Offer
           </Typography>
           <List>
             {service.features?.map((feature, index) => (
               <ListItem key={index}>
                 <ListItemIcon>
-                  <CheckCircleOutlineIcon sx={{ color: "#06FB07" }} />
+                  <CheckCircleOutlineIcon sx={{ color: RHUMUDA_BLUE }} />
                 </ListItemIcon>
                 <ListItemText primary={feature} />
               </ListItem>
@@ -260,7 +263,7 @@ const ServiceContent2 = ({ service }: { service: ServiceContent }) => {
                 bgcolor: "background.paper",
                 color: "text.primary",
                 borderRadius: 2,
-                border: "1px solid #06FB07",
+                border: `1px solid ${RHUMUDA_BLUE}`,
               }}
             >
               <Typography variant="body1">{service.additionalInfo}</Typography>
@@ -474,14 +477,14 @@ const ServicesPage = () => {
                     transition: "all 0.2s ease-in-out",
                     border:
                       selectedService === key
-                        ? "2px solid #06FB07"
+                        ? `2px solid ${RHUMUDA_BLUE}`
                         : "2px solid transparent",
                     "&:hover": {
-                      color: "#06FB07",
+                      color: RHUMUDA_BLUE,
                       bgcolor: "background.paper",
                       transform: "translateY(-2px)",
                       boxShadow: 2,
-                      border: "2px solid #06FB07",
+                      border: `2px solid ${RHUMUDA_BLUE}`,
                     },
                   }}
                   onClick={() => handleServiceChange(key as ServiceKey)}
@@ -495,7 +498,7 @@ const ServicesPage = () => {
                             : "text.primary",
                         transition: "color 0.2s ease-in-out",
                         ".MuiCard-root:hover &": {
-                          color: "#06FB07",
+                          color: RHUMUDA_BLUE,
                         },
                       },
                     })}
@@ -508,7 +511,7 @@ const ServicesPage = () => {
                         fontWeight: selectedService === key ? 600 : 400,
                         transition: "color 0.2s ease-in-out",
                         ".MuiCard-root:hover &": {
-                          color: "#06FB07",
+                          color: RHUMUDA_BLUE,
                         },
                       }}
                     >
