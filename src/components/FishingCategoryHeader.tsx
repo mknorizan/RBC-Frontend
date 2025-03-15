@@ -12,8 +12,8 @@ const FishingCategoryHeader: React.FC<FishingCategoryHeaderProps> = ({
     <Typography
       variant="h6"
       sx={{
-        color: "#0384BD",
-        fontSize: "1.1rem",
+        color: "black",
+        fontSize: "2rem",
         fontWeight: 500,
         mb: 2,
         mt: type === "DEEP_SEA" ? 0 : 4,
