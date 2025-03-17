@@ -41,7 +41,6 @@ import ReservationDatePicker from "../components/ReservationDatePicker";
 import ReservationJettyPoint from "../components/ReservationJettyPoint";
 import ReservationPassengers from "../components/ReservationPassengers";
 import { BOOKING_SELECTION_KEY, BookingSelection } from "../types/booking";
-// import Description from "../components/Description";
 import { Helmet } from 'react-helmet-async';
 import { API_CONFIG, getApiUrl } from "../config/api";
 
@@ -144,11 +143,13 @@ interface StorageData {
 const STORAGE_KEY = "rhumuda_inquiry_form";
 
 const saveToLocalStorage = (data: StorageData) => {
+  console.log('[Debug] Saving to localStorage:', { key: STORAGE_KEY, data });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
 
 const loadFromLocalStorage = () => {
   const saved = localStorage.getItem(STORAGE_KEY);
+  console.log('[Debug] Loading from localStorage:', { key: STORAGE_KEY, data: saved ? JSON.parse(saved) : null });
   return saved ? JSON.parse(saved) : null;
 };
 
@@ -161,16 +162,28 @@ const generateBookingId = () => {
 const InquiryPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Initialize search values from location state or defaults
   const searchValues = location.state || {
     jettyPoint: "",
     bookingDate: dayjs().add(1, "day").format("YYYY-MM-DD"),
     passengers: 1,
   };
 
-  const [activeSection, setActiveSection] = React.useState<number>(
+  // Initialize state with search values
+  const [reservationDetails, setReservationDetails] = useState<ReservationDetails>({
+    jettyPoint: searchValues.jettyPoint || "",
+    bookingDate: searchValues.bookingDate || dayjs().add(1, "day").format("YYYY-MM-DD"),
+    passengers: searchValues.passengers || 1,
+    packageId: "",
+    addOns: [],
+  });
+
+  const [activeSection, setActiveSection] = useState<number>(
     (location.state as any)?.activeSection ?? 0
   );
-  const [customerInfo, setCustomerInfo] = React.useState<CustomerInfo>({
+
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: "",
     lastName: "",
     phoneNumber: "",
@@ -182,20 +195,23 @@ const InquiryPage: React.FC = () => {
     country: "",
   });
 
-  const [reservationDetails, setReservationDetails] =
-    React.useState<ReservationDetails>({
-      jettyPoint: searchValues.jettyPoint,
-      bookingDate: searchValues.bookingDate,
-      passengers: searchValues.passengers,
-      packageId: "",
-      addOns: [],
-    });
-
-  const [otherOptions, setOtherOptions] = React.useState<OtherOptions>({
+  const [otherOptions, setOtherOptions] = useState<OtherOptions>({
     alternativeDate1: "",
     alternativeDate2: "",
     specialRemarks: "",
   });
+
+  // Only load from localStorage if we don't have location state
+  useEffect(() => {
+    const savedData = loadFromLocalStorage();
+    if (savedData && !location.state) {
+      console.log('[Debug] Loading saved data from localStorage:', savedData);
+      setCustomerInfo(savedData.customerInfo);
+      setActiveSection(savedData.activeSection);
+      setReservationDetails(savedData.reservationDetails);
+      setOtherOptions(savedData.otherOptions);
+    }
+  }, [location.state]);
 
   const [errors, setErrors] = React.useState<ValidationErrors>({
     firstName: "",
@@ -233,6 +249,7 @@ const InquiryPage: React.FC = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        console.log('[Debug] Fetched add-ons:', data);
         setAddOns(data);
       } catch (error) {
         console.error("Error fetching add-ons:", error);
@@ -252,7 +269,7 @@ const InquiryPage: React.FC = () => {
           })
         );
         const data = await response.json();
-        console.log("Raw Package Data:", data);
+        console.log('[Debug] Fetched packages:', data);
         setPackages(data);
       } catch (error) {
         console.error("Error fetching packages:", error);
@@ -263,79 +280,6 @@ const InquiryPage: React.FC = () => {
       fetchPackages();
     }
   }, [selectedCategory]);
-
-  useEffect(() => {
-    const savedData = loadFromLocalStorage();
-    if (savedData) {
-      setCustomerInfo(savedData.customerInfo);
-      setActiveSection(savedData.activeSection);
-      setReservationDetails(savedData.reservationDetails);
-      setOtherOptions(savedData.otherOptions);
-    } else {
-      // Initialize with search values and save to localStorage immediately
-      const initialReservationDetails = {
-        jettyPoint: searchValues.jettyPoint || "",
-        bookingDate: searchValues.bookingDate || "",
-        passengers: searchValues.passengers || 1,
-        packageId: "",
-        addOns: [],
-      };
-      setReservationDetails(initialReservationDetails);
-
-      // Save initial state to localStorage
-      saveToLocalStorage({
-        customerInfo: {
-          firstName: "",
-          lastName: "",
-          phoneNumber: "",
-          email: "",
-          addressLine1: "",
-          addressLine2: "",
-          postalCode: "",
-          city: "",
-          country: "",
-        },
-        activeSection: 0,
-        reservationDetails: initialReservationDetails,
-        otherOptions: {
-          alternativeDate1: "",
-          alternativeDate2: "",
-          specialRemarks: "",
-        },
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    // Try router state first
-    const routerSelection = location.state as BookingSelection;
-
-    if (routerSelection?.categoryId && routerSelection?.packageId) {
-      setSelectedCategory(routerSelection.categoryId);
-      setReservationDetails((prev) => ({
-        ...prev,
-        packageId: routerSelection.packageId,
-      }));
-      return;
-    }
-
-    // Fallback to localStorage
-    const storedSelection = localStorage.getItem(BOOKING_SELECTION_KEY);
-    if (storedSelection) {
-      const selection: BookingSelection = JSON.parse(storedSelection);
-
-      // Check if data is not stale (24 hours)
-      if (Date.now() - selection.timestamp < 24 * 60 * 60 * 1000) {
-        setSelectedCategory(selection.categoryId);
-        setReservationDetails((prev) => ({
-          ...prev,
-          packageId: selection.packageId,
-        }));
-      } else {
-        localStorage.removeItem(BOOKING_SELECTION_KEY);
-      }
-    }
-  }, []);
 
   const validateName = (name: string): string => {
     if (!name) return "This field is required";
@@ -713,7 +657,7 @@ const InquiryPage: React.FC = () => {
         specialRemarks: otherOptions.specialRemarks || null,
       };
 
-      console.log("Sending booking data:", bookingData);
+      console.log('[Debug] Sending booking data:', bookingData);
 
       const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.BOOKINGS), {
         method: "POST",
@@ -724,7 +668,7 @@ const InquiryPage: React.FC = () => {
       });
 
       const responseData = await response.json();
-      console.log("Server response:", responseData);
+      console.log('[Debug] Server response:', responseData);
 
       if (!response.ok) {
         throw new Error(

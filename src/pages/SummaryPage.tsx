@@ -164,6 +164,7 @@ interface BookingData {
 }
 
 const STORAGE_KEY = "rhumuda_inquiry_form";
+const BOOKING_SELECTION_KEY = "rhumuda_booking_selection";
 
 const formatDate = (dateString: string | null) => {
   return dateString ? dayjs(dateString).format("DD/MM/YYYY") : "Not specified";
@@ -497,8 +498,12 @@ const SummaryPage: React.FC = () => {
         throw new Error(errorData.message || "Failed to submit inquiry");
       }
 
-      // setShowCompletionDialog(true);
-      fetchBookingData(); // Refresh to get updated status
+      // Clear localStorage after successful submission
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(BOOKING_SELECTION_KEY);
+
+      // Refresh to get updated status and show success message
+      fetchBookingData();
       showNotification('Your inquiry has been sent successfully! Please check your email for confirmation.', 'success');
     } catch (error: any) {
       let errorMessage = 'An error occurred while sending your inquiry.';
