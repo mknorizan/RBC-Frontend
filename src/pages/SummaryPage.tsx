@@ -1256,22 +1256,28 @@ const SummaryPage: React.FC = () => {
                         justifyContent: "space-between",
                         alignItems: "flex-start"
                       }}>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontSize: "0.775rem" }}
-                        >
-                          {addon.name}{addon.perPerson ? " (per pax)" : ""}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ ml: 2, fontSize: "0.775rem" }}
-                        >
-                          {addon.perPerson ? (
-                            <>RM {addon.price * booking.passengers}.00</>
-                          ) : (
-                            <>RM {addon.price}.00</>
-                          )}
-                        </Typography>
+                      <Grid container>
+                        <Grid item xs={8}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.775rem" }}
+                          >
+                            {addon.name}{addon.perPerson ? " (per pax)" : ""}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={4} justifyContent={"flex-end"} display={"flex"}>
+                          <Typography
+                            variant="body2"
+                            sx={{ ml: 2, fontSize: "0.775rem" }}
+                          >
+                            {addon.perPerson ? (
+                              <>RM {addon.price * booking.passengers}.00</>
+                            ) : (
+                              <>RM {addon.price}.00</>
+                            )}
+                          </Typography>
+                        </Grid>
+                      </Grid>
                       </Box>
                     </Box>
                   ))}
