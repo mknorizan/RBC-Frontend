@@ -272,7 +272,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
       // Log the prepared update data
       console.log("Sending update data:", updateData);
 
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.BOOKINGS), {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.BOOKINGS) + `/${bookingId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
