@@ -540,6 +540,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                         newValue ? newValue.format("YYYY-MM-DD") : null
                       )
                     }
+                    format="DD/MM/YYYY"
                     sx={{ width: "100%" }}
                     slotProps={{
                       textField: {
@@ -764,6 +765,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                         newValue ? newValue.format("YYYY-MM-DD") : null
                       )
                     }
+                    format="DD/MM/YYYY"
                     sx={{ width: "100%" }}
                   />
                 </LocalizationProvider>
@@ -779,6 +781,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                         newValue ? newValue.format("YYYY-MM-DD") : null
                       )
                     }
+                    format="DD/MM/YYYY"
                     sx={{ width: "100%" }}
                   />
                 </LocalizationProvider>
