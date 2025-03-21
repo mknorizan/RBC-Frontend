@@ -154,16 +154,19 @@ const HomePage: React.FC = () => {
 
   const handleCategorySelect = async (category: string) => {
     setSelectedCategory(category);
-    try {
-      const categoryId = category === "fishing" ? 3 : category === "island" ? 2 : 1;
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PACKAGES) + `/category/${categoryId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setCategoryName(data.name);
-    } catch (err) {
-      setError("Failed to load category name");
+    // Set category name directly instead of fetching from API
+    switch (category) {
+      case "boat":
+        setCategoryName("Boat Charter");
+        break;
+      case "island":
+        setCategoryName("Island Day Trip");
+        break;
+      // case "fishing":
+      //   setCategoryName("Deep Sea Fishing Packages");
+      //   break;
+      default:
+        setCategoryName("");
     }
   };
 
