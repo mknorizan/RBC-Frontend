@@ -541,6 +541,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                       )
                     }
                     format="DD/MM/YYYY"
+                    minDate={dayjs()}
                     sx={{ width: "100%" }}
                     slotProps={{
                       textField: {
@@ -766,6 +767,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                       )
                     }
                     format="DD/MM/YYYY"
+                    minDate={dayjs()}
                     sx={{ width: "100%" }}
                   />
                 </LocalizationProvider>
@@ -782,6 +784,7 @@ const BookingEditDialog: React.FC<BookingEditDialogProps> = ({
                       )
                     }
                     format="DD/MM/YYYY"
+                    minDate={dayjs()}
                     sx={{ width: "100%" }}
                   />
                 </LocalizationProvider>
