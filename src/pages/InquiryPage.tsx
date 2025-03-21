@@ -239,7 +239,18 @@ const InquiryPage: React.FC = () => {
   const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [addOnsError, setAddOnsError] = useState<string | null>(null);
   const [packages, setPackages] = useState<Package[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<number>(1); // Default to boat charter
+  const [selectedCategory, setSelectedCategory] = useState<number>(
+    (location.state as any)?.categoryId || 1
+  ); // Initialize from location state or default to 1 (boat charter)
+
+  useEffect(() => {
+    if (location.state?.packageId) {
+      setReservationDetails(prev => ({
+        ...prev,
+        packageId: location.state.packageId
+      }));
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchAddOns = async () => {
