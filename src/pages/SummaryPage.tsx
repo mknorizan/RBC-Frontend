@@ -1211,8 +1211,9 @@ const SummaryPage: React.FC = () => {
 
                     return booking?.passengers === 1 
                       ? "(price starts)" 
-                      // : `(${booking?.passengers} persons × RM${selectedPackage?.basePrice.toFixed(2)})`;
-                      : `(RM${selectedPackage?.basePrice.toFixed(0)}/pax)`;
+                      : selectedPackage?.categoryId === 1
+                        ? `(RM${selectedPackage?.basePrice.toFixed(0)})`
+                        : `(RM${selectedPackage?.basePrice.toFixed(0)}/pax)`;
                   })()}
                 </Typography>
                 <Typography variant="subtitle2" sx={{ fontSize: '0.775rem' }}>
